@@ -1,0 +1,20 @@
+--- gen_module-tmp/sphinx-in.orig/bpy.types.UILayout.rst	2020-07-08 11:58:38.119518403 +0000
++++ gen_module-tmp/sphinx-in/bpy.types.UILayout.rst	2020-07-08 12:32:29.039531243 +0000
+@@ -488,7 +488,7 @@ base class --- :class:`bpy_struct`
+ 
+       :rtype: :class:`OperatorProperties`
+ 
+-   .. method:: operator_menu_hold(operator, text="", text_ctxt="", translate=True, icon='NONE', emboss=True, depress=False, icon_value=0, menu)
++   .. method:: operator_menu_hold(operator, text="", text_ctxt="", translate=True, icon='NONE', emboss=True, depress=False, icon_value=0, menu="")
+ 
+       Item. Places a button into the layout to call an Operator
+ 
+@@ -1237,7 +1237,7 @@ base class --- :class:`bpy_struct`
+       :type property: string, (never None)
+       :type clip_user: :class:`MovieClipUser`, (never None)
+ 
+-   .. method:: template_list(listtype_name, list_id="", dataptr, propname, active_dataptr, active_propname, item_dyntip_propname="", rows=5, maxrows=5, type='DEFAULT', columns=9)
++   .. method:: template_list(listtype_name, list_id="", dataptr="", propname="", active_dataptr="", active_propname=0, item_dyntip_propname="", rows=5, maxrows=5, type='DEFAULT', columns=9)
+ 
+       Item. A list widget to display data, e.g. vertexgroups.
+ 
