@@ -88,9 +88,11 @@ def make_bge_rule(config: 'fbm.PackageGeneratorConfig') -> 'fbm.PackageGeneratio
 
 def make_other_rules(config: 'fbm.PackageGeneratorConfig') -> List['fbm.PackageGenerationRule']:
     mod_files = glob.glob("{}/mods/generated_mods/gen_modules_modfile/*.json".format(MOD_FILES_DIR).replace("\\", "/"))
+    mod_files += glob.glob("{}/mods/generated_mods/gen_startup_modfile/*.json".format(MOD_FILES_DIR).replace("\\", "/"))
     mod_files = set(mod_files) - {
         "{}/mods/generated_mods/gen_modules_modfile/bpy.json".format(MOD_FILES_DIR).replace("\\", "/"),
         "{}/mods/generated_mods/gen_modules_modfile/bpy_extras.json".format(MOD_FILES_DIR).replace("\\", "/"),
+        "{}/mods/generated_mods/gen_startup_modfile/bpy.json".format(MOD_FILES_DIR).replace("\\", "/"),
     }
 
     rules = []
