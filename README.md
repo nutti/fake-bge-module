@@ -2,6 +2,8 @@
 
 fake-bge-module is the collections of the fake Blender Game Engine (BGE) Python API modules for the code completion in commonly used IDEs.
 
+*Note: The similar project for Blender is availabled on [fake-bpy-module](https://github.com/nutti/fake-bpy-module) which targets [Blender](https://www.blender.org/).*
+
 
 ## Requirements
 
@@ -11,17 +13,31 @@ Check your Python version is >= 3.7.
 
 ## Install
 
-fake-bge-module can be installed via a pre-generated modules.
+fake-bge-module can be installed via a pip package, or pre-generated modules.
 You can also generate and install modules manually.
+
+
+### Install via pip package
+
+fake-bge-module is registered to PyPI.  
+You can install it as a pip package.
+
+```sh
+pip install fake-bge-module-<version>
+```
+
+If you install fake-bge-module for UPBGE 0.2.5, run below command.
+
+```sh
+pip install fake-bge-module-0.2.5
+```
 
 
 #### Supported UPBGE Version
 
-fake-bge-module targets only below versions of [UPBGE](https://upbge.org/) which is a fork of Blender.
-
-|Version|
-|---|
-|0.2.5|
+|Version|PyPI|
+|---|---|
+|0.2.5|https://pypi.org/project/fake-bge-module-0.2.5/|
 
 
 ### Install via pre-generated modules
