@@ -105,21 +105,13 @@ function create_pylintrc() {
 function workaround_quirks() {
     local version=$1
 
-    if [[ $version =~ ^2.8[0-9]$ ]]; then
-        # The method draw_panel_header comes from the Panel class which is a base class of CYCLES_PT_sampling_presets.
-        # The error "E1120: No value for argument 'layout'" is raised when calling the classmethod implicitly derived
-        # from base class. It is not clear why pylint does not handle this gracefully, so "fixing" it for pylint.
-        echo "Fixing pylint quirk: \".draw_panel_header(self.layout)\""
-        sed -i 's/.draw_panel_header(self.layout)/.draw_panel_header(self, layout)/' intern/cycles/blender/addon/ui.py
-    fi
-
-    if [[ $version =~ ^2.7[89]$ ]]; then
+    if [[ $version =~ ^0.2.[5]$ ]]; then
         # bpy.types.XXX related Cycle add-on classes are  not provided by fake-bge-module
         echo "Fixing cycles class: \".bpy.types.CYCLES_MT_[a-z]*_presets\""
         sed -i 's/bpy.types.\(CYCLES_MT_[a-z]*_presets\)/\1/' intern/cycles/blender/addon/ui.py
     fi
 
-    if [[ $version =~ ^2.7[89]$ ]]; then
+    if [[ $version =~ ^0.2.[5]$ ]]; then
         # pylint does not respect a `hasattr` in `if hasattr(myclass, field) and myclass.field == test`
         echo "Ignoring pylint bug: https://github.com/PyCQA/pylint/issues/801"
         sed -i '/^\s*if hasattr(.*/i # pylint: disable=no-member' intern/cycles/blender/addon/*.py
@@ -168,7 +160,7 @@ cat "${pylintrcpath}"
 echo
 
 # Fixing addon code to workaround some quirks
-#workaround_quirks ${version}
+workaround_quirks ${version}
 echo
 
 # Expect failure before fake-bge-module is installed, otherwise following test has no meaning
