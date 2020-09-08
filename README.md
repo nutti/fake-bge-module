@@ -58,6 +58,11 @@ You can also generate modules manually.
 See [Generate Modules](docs/generate_modules.md) for detail.
 
 
+## Change Log
+
+See [CHANGELOG.md](CHANGELOG.md)
+
+
 ## Bug report / Feature request / Disscussions
 
 If you want to report bug, request features or discuss about this add-on, see [ISSUES.md](https://github.com/nutti/fake-bge-module/blob/master/ISSUES.md).
