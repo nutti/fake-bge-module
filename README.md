@@ -7,7 +7,7 @@ fake-bge-module is the collections of the fake Blender Game Engine (BGE) Python 
 
 ## Requirements
 
-fake-bge-module uses typing module and type hints available from Python 3.7.
+fake-bge-module uses typing module and type hints which are available from Python 3.7.
 Check your Python version is >= 3.7.
 
 
