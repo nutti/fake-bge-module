@@ -22,7 +22,7 @@ class ImportModuleTestConfig:
 def parse_options(config: ImportModuleTestConfig):
     usage = "Usage: python {} [-p <modules_path>]".format(__file__)
     parser = argparse.ArgumentParser(usage)
-    parser.add_argument("-p", dest="modules_path", type=str, help="fake-bge-module path")
+    parser.add_argument("-p", dest="modules_path", type=str, help="fake-module path")
 
     args = parser.parse_args()
     if args.modules_path:
@@ -32,7 +32,13 @@ def parse_options(config: ImportModuleTestConfig):
 def generate_tests(config: ImportModuleTestConfig) -> list:
     # Search modules to test.
     files = glob.glob("{}/*".format(config.modules_path), recursive=False)
-    module_names = [os.path.splitext(os.path.basename(f))[0] for f in files]
+    module_names = []
+    for f in files:
+        basename = os.path.basename(f)
+        if basename == "py.typed":
+            continue
+        module_name = os.path.splitext(basename)[0]
+        module_names.append(module_name)
 
     # Load template.
     script_dir = os.path.dirname(__file__)

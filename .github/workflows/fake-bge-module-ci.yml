@@ -20,17 +20,17 @@ jobs:
     steps:
       # Use ISO 8601 date (in UTC) + timestamp (in UTC)
       - name: Create generic module version
-        run: echo ::set-env name=MODULE_VERSION::$(date -u +%Y%m%d).dev$(date -u +%H%M%S)
+        run: echo "MODULE_VERSION=$(date -u +%Y%m%d).dev$(date -u +%H%M%S)" >> $GITHUB_ENV
 
       # Use the tag name for a release
       - name: Override release module version
         if: startsWith(github.ref, 'refs/tags/')
-        run: echo ::set-env name=MODULE_VERSION::${GITHUB_REF#refs/*/}
+        run: echo "MODULE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
 
       # Add addtional git sha ref
       - name: Override PR module version
         if: github.event_name == 'pull_request'
-        run: echo ::set-env name=MODULE_VERSION::${MODULE_VERSION}+${GITHUB_SHA::8}
+        run: echo "MODULE_VERSION=${MODULE_VERSION}+${GITHUB_SHA::8}" >> $GITHUB_ENV
 
       # Set module version output
       - name: Set module version
@@ -93,7 +93,7 @@ jobs:
       - name: Generate pip Packages
         env:
           RELEASE_VERSION: ${{ needs.set_versions.outputs.module_version }}
-        run: bash tools/pip_package/build_pip_package.sh release ${{ matrix.upbge_version }} ./upbge ./upbge-bin/upbge-v${{ matrix.upbge_version }}-bin
+        run: bash tools/pip_package/build_pip_package.sh release upbge ${{ matrix.upbge_version }} ./upbge ./upbge-bin/upbge-v${{ matrix.upbge_version }}-bin ${{ matrix.upbge_version }}
 
       - name: Archive pip packages
         uses: actions/upload-artifact@v2
@@ -113,13 +113,29 @@ jobs:
       - name: Test generated pip module against Cycles addon
         # Using a wildcard instead of ${{ needs.set_versions.outputs.module_version }} below, because the pip filenames do not respect leading zeros:
         # For example: 00:29:45 UTC will create a file version "...dev2945-py3-none..." and not use {{ module_version}} "...dev002945-py3-none..."
-        run: bash tests/pylint_cycles.sh ${{ matrix.upbge_version }} ./upbge/ ./release/${{ matrix.upbge_version }}/fake_bge_module_${{ matrix.upbge_version }}-*-py3-none-any.whl
+        run: bash tests/pylint_cycles.sh upbge ${{ matrix.upbge_version }} ./upbge/ ./release/${{ matrix.upbge_version }}/fake_bge_module_${{ matrix.upbge_version }}-*-py3-none-any.whl
 
-  release_test:
+      - name: Collect failure state
+        if: failure()
+        run: bash tools/utils/collect_failure_state.sh failure_state
+
+      - name: Store failure state
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: failure_state
+          path: failure_state
+
+  pypi_release_test:
     name: Release test
     needs: build_modules
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        upbge_version:
+          ["0.2.5"]
     steps:
       - name: Fetch artifacts
         uses: actions/download-artifact@v2
@@ -132,39 +148,59 @@ jobs:
         with:
           password: ${{ secrets.test_pypi_token }}
           repository_url: https://test.pypi.org/legacy/
-          packages_dir: "dist/fake_bge_modules_*_pip_*/*/"
+          packages_dir: "dist/fake_bge_modules_${{ matrix.upbge_version }}_pip_*/*/"
 
-  release:
-    name: Release fake-bge-module
-    needs: release_test
-    if: startsWith(github.ref, 'refs/tags/')
+  pypi_release:
+    name: PyPI Release fake-bge-module
+    needs: [pypi_release_test]
+    if: github.event_name == 'release'
     runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+      matrix:
+        upbge_version:
+          ["0.2.5"]
     steps:
       - name: Fetch Artifacts
         uses: actions/download-artifact@v2
         with:
           path: dist
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.TOKEN_FOR_ACTIONS }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }}
-          draft: true
-          prerelease: false
-
-      - name: Publish fake-bge-module to GitHub Release Page
-        uses: csexton/release-asset-action@v2
-        with:
-          release-url: ${{ steps.create_release.outputs.upload_url }}
-          pattern: "dist/fake_bge_modules_*_raw_*/*.zip"
-          github-token: ${{ secrets.TOKEN_FOR_ACTIONS }}
-
       - name: Publish distribution 📦 to PyPI
         uses: pypa/gh-action-pypi-publish@v1.3.1
         with:
           password: ${{ secrets.pypi_token }}
-          packages_dir: "dist/fake_bge_modules_*_pip_*/*/"
+          packages_dir: "dist/fake_bge_modules_${{ matrix.upbge_version }}_pip_*/*/"
+
+  upload_github_release_assets:
+    name: Upload Artifacts to GitHub Release
+    needs: [pypi_release_test]
+    if: github.event_name == 'release'
+    runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+      matrix:
+        upbge_version:
+          ["0.2.5"]
+    steps:
+      - name: Fetch Artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: dist
+
+      - name: Store Asset Information
+        run: |
+          export FAKE_BGE_MODULE_FILEPATH=$(ls -1 dist/fake_bge_modules_${{ matrix.upbge_version }}_raw_*/*.zip | head -n 1) && echo ${FAKE_BGE_MODULE_FILEPATH}
+          echo "FAKE_BGE_MODULE_FILEPATH=${FAKE_BGE_MODULE_FILEPATH}" >> $GITHUB_ENV
+          echo "FAKE_BGE_MODULE_FILENAME=$(basename "${FAKE_BGE_MODULE_FILEPATH}")" >> $GITHUB_ENV
+          echo "MIME_TYPE=$(file --mime-type -b "${FAKE_BGE_MODULE_FILEPATH}")" >> $GITHUB_ENV
+
+      - name: Upload ${{ matrix.upbge_version }}
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN_FOR_ACTIONS }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ${{ env.FAKE_BGE_MODULE_FILEPATH }}
+          asset_name: ${{ env.FAKE_BGE_MODULE_FILENAME }}
+          asset_content_type: ${{ env.MIME_TYPE }}

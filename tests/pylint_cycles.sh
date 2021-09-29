@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -eEu
 
-if [ $# -ne 3 ]; then
-    echo "Usage: pylint_test.sh <upbge-version> <upbge-source-dir> <fake-bge-wheel-file>"
+if [ $# -ne 4 ]; then
+    echo "Usage: pylint_test.sh <target> <target-version> <blender-source-dir> <fake-module-wheel-file>"
     exit 1
 fi
 
@@ -12,32 +12,71 @@ declare -r IGNORED_PYLINT_ERRORS=(
     "W" # warning, for python specific problems
     "E0601" # used-before-assignment: Lots of false positives for cases like "if xxx in locals()"
     "E0602" # undefined-variable: Lots of false positives for cases like "if xxx in locals()"
-    "E1111" # assignment-from-no-return: Is difficult to handle in fake-bge-module, ignoring for now
+    "E1111" # assignment-from-no-return: Is difficult to handle in fake-module, ignoring for now
 )
 
-declare -r SUPPORTED_VERSIONS=(
+declare -r SUPPORTED_BLENDER_VERSIONS=(
+    "2.78" "2.79" "2.80" "2.81" "2.82" "2.83"
+    "2.90" "2.91" "2.92" "2.93"
+    "latest"
+)
+
+declare -r SUPPORTED_UPBGE_VERSIONS=(
     "0.2.5"
+    "latest"
+)
+
+declare -A BLENDER_TAG_NAME=(
+    ["v2.78"]="v2.78c"
+    ["v2.79"]="v2.79b"
+    ["v2.80"]="v2.80"
+    ["v2.81"]="v2.81a"
+    ["v2.82"]="v2.82a"
+    ["v2.83"]="v2.83.9"
+    ["v2.90"]="v2.90.0"
+    ["v2.91"]="v2.91.0"
+    ["v2.92"]="v2.92.0"
+    ["v2.93"]="v2.93.0"
+    ["vlatest"]="master"
 )
 
 declare -A UPBGE_TAG_NAME=(
     ["v0.2.5"]="v0.2.5"
+    ["vlatest"]="master"
 )
 
-version=${1}
-source_dir=${2}
-fake_bge_module_wheel=${3}
+target=${1}
+version=${2}
+source_dir=${3}
+fake_module_wheel=${4}
 PYTHON_BIN=${PYTHON_BIN:-python}
 
 # check if the specified version is supported
 supported=0
-for v in "${SUPPORTED_VERSIONS[@]}"; do
-    if [ "${v}" = "${version}" ]; then
-        supported=1
+if [ ${target} = "blender" ]; then
+    for v in "${SUPPORTED_BLENDER_VERSIONS[@]}"; do
+        if [ "${v}" = "${version}" ]; then
+            supported=1
+        fi
+    done
+    if [ ${supported} -eq 0 ]; then
+        echo "${version} is not supported."
+        echo "Supported version is ${SUPPORTED_BLENDER_VERSIONS[*]}."
+        exit 1
     fi
-done
-if [ ${supported} -eq 0 ]; then
-    echo "${version} is not supported."
-    echo "Supported version is ${SUPPORTED_VERSIONS[*]}."
+elif [ ${target} = "upbge" ]; then
+    for v in "${SUPPORTED_UPBGE_VERSIONS[@]}"; do
+        if [ "${v}" = "${version}" ]; then
+            supported=1
+        fi
+    done
+    if [ ${supported} -eq 0 ]; then
+        echo "${version} is not supported."
+        echo "Supported version is ${SUPPORTED_UPBGE_VERSIONS[*]}."
+        exit 1
+    fi
+else
+    echo "${target} is not supported."
     exit 1
 fi
 
@@ -103,18 +142,43 @@ function create_pylintrc() {
 }
 
 function workaround_quirks() {
-    local version=$1
+    local target=$1
+    local version=$2
 
-    if [[ $version =~ ^0.2.[5]$ ]]; then
-        # bpy.types.XXX related Cycle add-on classes are  not provided by fake-bge-module
-        echo "Fixing cycles class: \".bpy.types.CYCLES_MT_[a-z]*_presets\""
-        sed -i 's/bpy.types.\(CYCLES_MT_[a-z]*_presets\)/\1/' intern/cycles/blender/addon/ui.py
-    fi
+    if [ $target = "blender" ]; then
+        if [[ $version =~ ^2.8[0-9]$ || $version =~ ^2.9[0-9]$ || $version =~ ^latest$ ]]; then
+            # The method draw_panel_header comes from the Panel class which is a base class of CYCLES_PT_sampling_presets.
+            # The error "E1120: No value for argument 'layout'" is raised when calling the classmethod implicitly derived
+            # from base class. It is not clear why pylint does not handle this gracefully, so "fixing" it for pylint.
+            echo "Fixing pylint quirk: \".draw_panel_header(self.layout)\""
+            sed -i 's/.draw_panel_header(self.layout)/.draw_panel_header(self, layout)/' intern/cycles/blender/addon/ui.py
+        fi
 
-    if [[ $version =~ ^0.2.[5]$ ]]; then
-        # pylint does not respect a `hasattr` in `if hasattr(myclass, field) and myclass.field == test`
-        echo "Ignoring pylint bug: https://github.com/PyCQA/pylint/issues/801"
-        sed -i '/^\s*if hasattr(.*/i # pylint: disable=no-member' intern/cycles/blender/addon/*.py
+        if [[ $version =~ ^2.7[89]$ ]]; then
+            # bpy.types.XXX related Cycle add-on classes are not provided by fake-module
+            echo "Fixing cycles class: \".bpy.types.CYCLES_MT_[a-z]*_presets\""
+            sed -i 's/bpy.types.\(CYCLES_MT_[a-z]*_presets\)/\1/' intern/cycles/blender/addon/ui.py
+        fi
+
+        if [[ $version =~ ^2.7[89]$ ]]; then
+            # pylint does not respect a `hasattr` in `if hasattr(myclass, field) and myclass.field == test`
+            echo "Ignoring pylint bug: https://github.com/PyCQA/pylint/issues/801"
+            sed -i '/^\s*if hasattr(.*/i # pylint: disable=no-member' intern/cycles/blender/addon/*.py
+        fi
+    elif [ $target = "upbge" ]; then
+        if [[ $version =~ ^latest$ ]]; then
+            # The method draw_panel_header comes from the Panel class which is a base class of CYCLES_PT_sampling_presets.
+            # The error "E1120: No value for argument 'layout'" is raised when calling the classmethod implicitly derived
+            # from base class. It is not clear why pylint does not handle this gracefully, so "fixing" it for pylint.
+            echo "Fixing pylint quirk: \".draw_panel_header(self.layout)\""
+            sed -i 's/.draw_panel_header(self.layout)/.draw_panel_header(self, layout)/' intern/cycles/blender/addon/ui.py
+        fi
+
+        if [[ $version =~ ^0.2.5$ ]]; then
+            # bpy.types.XXX related Cycle add-on classes are not provided by fake-module
+            echo "Fixing cycles class: \".bpy.types.CYCLES_MT_[a-z]*_presets\""
+            sed -i 's/bpy.types.\(CYCLES_MT_[a-z]*_presets\)/\1/' intern/cycles/blender/addon/ui.py
+        fi
     fi
 }
 
@@ -141,10 +205,14 @@ source "${temp_venv}"/bin/activate
 # install pylint
 pip install --quiet pylint
 
-# Enter UPBGE source
+# Enter source
 pushd "${source_dir}"
 
-git_tag="${UPBGE_TAG_NAME[v${version}]}"
+if [ ${target} = "blender" ]; then
+    git_tag="${BLENDER_TAG_NAME[v${version}]}"
+elif [ ${target} = "upbge" ]; then
+    git_tag="${UPBGE_TAG_NAME[v${version}]}"
+fi
 remote_git_ref="$(get_remote_git_ref "${git_tag}")"
 
 echo "Checking out git tag ${git_tag}"
@@ -160,31 +228,31 @@ cat "${pylintrcpath}"
 echo
 
 # Fixing addon code to workaround some quirks
-workaround_quirks ${version}
+workaround_quirks ${target} ${version}
 echo
 
-# Expect failure before fake-bge-module is installed, otherwise following test has no meaning
-echo "Verifying that there are errors on the targeted test before fake-bge-module is installed."
+# Expect failure before fake-module is installed, otherwise following test has no meaning
+echo "Verifying that there are errors on the targeted test before fake-module is installed."
 if run_pylint_test ./intern/cycles/blender/addon/ "${pylintrcpath}" 1> /dev/null; then
-    echo "Error: Test was successfull even without the fake-bge-module installed."
+    echo "Error: Test was successfull even without the fake-module installed."
     exit 1
 else
-    echo "PASS: Test before installing fake-bge-module had errors."
+    echo "PASS: Test before installing fake-module had errors."
 fi
 
 # Leave source folder to support relative wheel installations
 popd > /dev/null
 
-# install fake-bge-module
+# install fake-module
 echo
-pip install "${fake_bge_module_wheel}"
+pip install "${fake_module_wheel}"
 
-# Re-enter UPBGE source
+# Re-enter blender source
 pushd "${source_dir}" > /dev/null
 
 # Run the "real" test now
 echo
-echo "Running test again with fake-bge-module:"
+echo "Running test again with fake-module:"
 run_pylint_test ./intern/cycles/blender/addon/ "${pylintrcpath}"
 echo "PASS: Final test has been passed."
 

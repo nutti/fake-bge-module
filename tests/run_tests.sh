@@ -38,10 +38,10 @@ failed_test=0
 
 package_list=`find ${PACKAGES_PATH} -name "*.zip"`
 for pkg in ${package_list}; do
-    if [[ ${pkg} =~ (fake_bge_modules_([a-z0-9\.]+)-(.*)).zip ]]; then
+    if [[ ${pkg} =~ (fake_(bpy|bge)_modules_([a-z0-9\.]+)-(.*)).zip ]]; then
         pkg_dir_name=${BASH_REMATCH[1]}
-        blender_version=${BASH_REMATCH[2]}
-        pkg_version=${BASH_REMATCH[3]}
+        blender_version=${BASH_REMATCH[3]}
+        pkg_version=${BASH_REMATCH[4]}
         if ! check_pep440_compatible_version "${pkg_version}"; then
             echo "Invalid package: '${pkg}'. File version '${pkg_version}' does not conform with PEP440."
             ((invalid_package+=1))

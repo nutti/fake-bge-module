@@ -10,8 +10,21 @@ import fake_bpy_module as fbm
 INPUT_DIR: str = "."
 SUPPORTED_TARGET: List[str] = ["pycharm"]
 SUPPORTED_STYLE_FORMAT: List[str] = ["none", "pep8"]
-SUPPORTED_MOD_BGE_VERSION: List[str] = [
-    "0.2.5"
+SUPPORTED_MOD_BLENDER_VERSION: List[str] = [
+    "2.78", "2.79", "2.80", "2.81", "2.82", "2.83", "2.90", "2.91", "2.92", "2.93",
+    "latest"
+]
+SUPPORTED_MOD_UPBGE_VERSION: List[str] = [
+    "0.2.5",
+    "latest"
+]
+SUPPORTED_BLENDER_VERSION: List[str] = [
+    "2.78", "2.79", "2.80", "2.81", "2.82", "2.83", "2.90", "2.91", "2.92", "2.93",
+    "latest"
+]
+SUPPORTED_UPBGE_VERSION: List[str] = [
+    "0.2.5",
+    "latest"
 ]
 MOD_FILES_DIR: str = os.path.dirname(os.path.abspath(__file__))
 
@@ -21,6 +34,7 @@ def make_bpy_rule(config: 'fbm.PackageGeneratorConfig') -> 'fbm.PackageGeneratio
     excludes_files = glob.glob(INPUT_DIR + "/bpy_extras*.rst")
     files = list(set(all_files) - set(excludes_files))
     mod_files = [
+        "{}/mods/common/analyzer/bpy.json".format(MOD_FILES_DIR).replace("\\", "/"),
         "{}/mods/generated_mods/gen_startup_modfile/bpy.json".format(MOD_FILES_DIR).replace("\\", "/"),
         "{}/mods/generated_mods/gen_modules_modfile/bpy.json".format(MOD_FILES_DIR).replace("\\", "/"),
     ]
@@ -45,12 +59,24 @@ def make_mathutils_rule(config: 'fbm.PackageGeneratorConfig') -> 'fbm.PackageGen
     mod_files = [
         "{}/mods/common/analyzer/mathutils.json".format(MOD_FILES_DIR).replace("\\", "/"),
     ]
-    return fbm.PackageGenerationRule("mathutils", files, fbm.AnalyzerWithModFile(mod_files), fbm.BaseGenerator())
+    if config.mod_version in ["2.78", "2.79"]:
+        mod_files.append("{}/mods/{}/analyzer/mathutils.json".format(MOD_FILES_DIR, config.mod_version).replace("\\", "/"))
+        return fbm.PackageGenerationRule("mathutils", files, fbm.AnalyzerWithModFile(mod_files), fbm.BaseGenerator())
+    else:
+        return fbm.PackageGenerationRule("mathutils", files, fbm.AnalyzerWithModFile(mod_files), fbm.BaseGenerator())
 
 
 def make_gpu_rule(config: 'fbm.PackageGeneratorConfig') -> 'fbm.PackageGenerationRule':
     files = glob.glob(INPUT_DIR + "/gpu*.rst")
     return fbm.PackageGenerationRule("gpu", files, fbm.BaseAnalyzer(), fbm.BaseGenerator())
+
+
+def make_gpu_extras_rule(config: 'fbm.PackageGeneratorConfig') -> 'fbm.PackageGenerationRule':
+    files = glob.glob(INPUT_DIR + "/gpu_extras*.rst")
+    mod_files = []
+    if config.mod_version not in ["2.78", "2.79", "0.2.5"]:
+        mod_files.append("{}/mods/generated_mods/gen_modules_modfile/gpu_extras.json".format(MOD_FILES_DIR).replace("\\", "/"))
+    return fbm.PackageGenerationRule("gpu_extras", files, fbm.AnalyzerWithModFile(mod_files), fbm.BaseGenerator())
 
 
 def make_freestyle_rule(config: 'fbm.PackageGeneratorConfig') -> 'fbm.PackageGenerationRule':
@@ -95,6 +121,11 @@ def make_other_rules(config: 'fbm.PackageGeneratorConfig') -> List['fbm.PackageG
         "{}/mods/generated_mods/gen_startup_modfile/bpy.json".format(MOD_FILES_DIR).replace("\\", "/"),
     }
 
+    if config.mod_version not in ["2.78", "2.79"]:
+        mod_files -= {
+            "{}/mods/generated_mods/gen_modules_modfile/gpu_extras.json".format(MOD_FILES_DIR).replace("\\", "/"),
+        }
+
     rules = []
     for mod_file in mod_files:
         mod_name = mod_file[mod_file.rfind("/") + 1:].replace(".json", "")
@@ -124,6 +155,14 @@ def parse_options(config: 'fbm.PackageGeneratorConfig'):
         "-m", dest="mod_version", type=str,
         help="Blender version for specific mod patches to be applied (ex. 2.79, 2.80)"
     )
+    parser.add_argument(
+        "-b", dest="blender_version", type=str,
+        help="Blender version (ex. 2.79, 2.80)"
+    )
+    parser.add_argument(
+        "-u", dest="upbge_version", type=str,
+        help="UPBGE version (ex. 0.2.5)"
+    )
     args = parser.parse_args()
     if args.input_dir:
         INPUT_DIR = args.input_dir
@@ -136,13 +175,44 @@ def parse_options(config: 'fbm.PackageGeneratorConfig'):
         raise RuntimeError("Not supported style format {}. "
                            "(Supported Style Format: {})"
                            .format(args.style_format, SUPPORTED_STYLE_FORMAT))
-    if args.mod_version:
-        if args.mod_version in SUPPORTED_MOD_BGE_VERSION:
-            config.mod_version = args.mod_version
+
+    if ((args.blender_version and args.upbge_version) or
+            (not args.blender_version and not args.upbge_version)):
+        raise RuntimeError("Specify one of the version blender or upbge")
+
+    if args.upbge_version:
+        if args.upbge_version in SUPPORTED_UPBGE_VERSION:
+            config.target_version = args.upbge_version
         else:
-            raise RuntimeError("Not supported mod version {}. "
+            raise RuntimeError("Not supported upbge version {}. "
                                "(Supported Version: {})"
-                               .format(args.mod_version, SUPPORTED_MOD_BGE_VERSION))
+                               .format(args.upbge_version, SUPPORTED_UPBGE_VERSION))
+
+        config.support_bge = True
+
+        if args.mod_version:
+            if args.mod_version in SUPPORTED_MOD_UPBGE_VERSION:
+                config.mod_version = args.mod_version
+            else:
+                raise RuntimeError("Not supported mod version {}. "
+                                   "(Supported Version: {})"
+                                   .format(args.mod_version, SUPPORTED_MOD_UPBGE_VERSION))
+
+    if args.blender_version:
+        if args.blender_version in SUPPORTED_BLENDER_VERSION:
+            config.target_version = args.blender_version
+        else:
+            raise RuntimeError("Not supported blender version {}. "
+                               "(Supported Version: {})"
+                               .format(args.blender_version, SUPPORTED_BLENDER_VERSION))
+
+        if args.mod_version:
+            if args.mod_version in SUPPORTED_MOD_BLENDER_VERSION:
+                config.mod_version = args.mod_version
+            else:
+                raise RuntimeError("Not supported mod version {}. "
+                                   "(Supported Version: {})"
+                                   .format(args.mod_version, SUPPORTED_MOD_BLENDER_VERSION))
 
     if args.dump:
         config.dump = True
@@ -151,7 +221,6 @@ def parse_options(config: 'fbm.PackageGeneratorConfig'):
 def main():
     config = fbm.PackageGeneratorConfig()
     config.os = fbm.check_os()
-    config.support_bge = True
     parse_options(config)
 
     pkg_generator = fbm.PackageGenerator(config)
@@ -160,11 +229,13 @@ def main():
     pkg_generator.add_rule(make_blf_rule(config))
     pkg_generator.add_rule(make_mathutils_rule(config))
     pkg_generator.add_rule(make_gpu_rule(config))
+    pkg_generator.add_rule(make_gpu_extras_rule(config))
     pkg_generator.add_rule(make_freestyle_rule(config))
     pkg_generator.add_rule(make_bpy_extras_rule(config))
     pkg_generator.add_rule(make_aud_rule(config))
     pkg_generator.add_rule(make_bmesh_rule(config))
-    pkg_generator.add_rule(make_bge_rule(config))
+    if config.support_bge:
+        pkg_generator.add_rule(make_bge_rule(config))
     for rule in make_other_rules(config):
         pkg_generator.add_rule(rule)
     pkg_generator.generate()

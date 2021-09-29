@@ -46,7 +46,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: "3.7"
+          python-version: "3.9"
 
       - name: Install python dependencies
         run: |
@@ -57,7 +57,7 @@ jobs:
         run: bash tests/run_pre_tests.sh src
 
       - name: Install UPBGE binary dependencies
-        run: sudo apt-get update && sudo apt-get install -y libglu1-mesa libegl1
+        run: sudo apt-get update && sudo apt-get install -y libglu1-mesa libegl1 libavformat-dev libavdevice-dev libboost-locale-dev
 
       - name: Install fake-bge-module tools
         run: sudo apt-get install -y pandoc
@@ -74,7 +74,7 @@ jobs:
       - name: Generate pip Packages
         env:
           RELEASE_VERSION: ${{ needs.set_versions.outputs.module_version }}
-        run: bash tools/pip_package/build_pip_package.sh release latest ./upbge ./upbge-bin/upbge-latest-bin
+        run: bash tools/pip_package/build_pip_package.sh release upbge latest ./upbge ./upbge-bin/upbge-latest-bin
 
       - name: Archive pip packages
         uses: actions/upload-artifact@v2
@@ -92,7 +92,18 @@ jobs:
         run: bash tests/run_tests.sh raw_modules
 
       - name: Test generated pip module against Cycles addon
-        run: bash tests/pylint_cycles.sh latest ./upbge/ ./release/latest/fake_bge_module_latest-*-py3-none-any.whl
+        run: bash tests/pylint_cycles.sh upbge latest ./upbge/ ./release/latest/fake_bge_module_latest-*-py3-none-any.whl
+
+      - name: Collect failure state
+        if: failure()
+        run: bash tools/utils/collect_failure_state.sh failure_state
+
+      - name: Store failure state
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: failure_state
+          path: failure_state
 
   pypi_release_test:
     name: PyPI Release test
