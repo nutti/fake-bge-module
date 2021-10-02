@@ -946,8 +946,8 @@ class BaseAnalyzer:
                 method = _parse_static_method(file, level=level.make_next_level(next_level_spaces))
                 method.set_class(class_name)
                 info.add_method(method)
-            elif re.match(r"^\s{" + str(level.num_spaces()) + r"}(\s+)\.\. (note|code-block|warning|literalinclude|seealso)::", line):
-                next_level_spaces = re.match(r"^\s{" + str(level.num_spaces()) + r"}(\s+)\.\. (note|code-block|warning|literalinclude|seealso)::", line).group(1)
+            elif re.match(r"^\s{" + str(level.num_spaces()) + r"}(\s+)\.\. (note|code-block|warning|literalinclude|seealso|deprecated)::", line):
+                next_level_spaces = re.match(r"^\s{" + str(level.num_spaces()) + r"}(\s+)\.\. (note|code-block|warning|literalinclude|seealso|deprecated)::", line).group(1)
                 self._skip_until_next_le_level(file, level=level.make_next_level(next_level_spaces))
             elif re.match(r"^\s{" + str(level.num_spaces()) + r"}(\s+)\.\.", line):
                 self._invalid_line(line, level)
