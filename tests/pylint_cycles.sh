@@ -205,6 +205,9 @@ source "${temp_venv}"/bin/activate
 # install pylint
 pip install --quiet pylint
 
+# Install dependencies
+pip install numpy
+
 # Enter source
 pushd "${source_dir}"
 
