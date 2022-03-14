@@ -75,7 +75,7 @@ jobs:
         run: bash tests/run_pre_tests.sh src
 
       - name: Install UPBGE binary dependencies
-        run: sudo apt-get install -y libglu1-mesa libjack0
+        run: sudo apt-get install -y libglu1-mesa libjack0 libopenimageio-dev
 
       - name: Install fake-bge-module tools
         run: sudo apt-get install -y pandoc
