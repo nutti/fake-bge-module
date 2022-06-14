@@ -27,6 +27,7 @@
 #
 ################################################################################
 
+import re
 import sys
 import inspect
 import os
@@ -38,12 +39,13 @@ import bpy
 
 
 EXCLUDE_MODULE_LIST = {
-    "bl_i18n_utils.settings_user",
-    "bl_i18n_utils.utils_spell_check",
-    "bl_app_templates_system.2D_Animation",
-    "bl_app_templates_system.Sculpting",
-    "bl_app_templates_system.VFX",
-    "bl_app_templates_system.Video_Editing",
+    r"bl_i18n_utils\.settings_user",
+    r"bl_i18n_utils\.utils_spell_check",
+    r"bl_app_templates_system\.2D_Animation",
+    r"bl_app_templates_system\.Sculpting",
+    r"bl_app_templates_system\.VFX",
+    r"bl_app_templates_system\.Video_Editing",
+    r"bgui\.*",
 }
 
 
@@ -74,7 +76,18 @@ def get_module_name_list(config: 'GenerationConfig') -> List[str]:
             module_name = module_name.replace(".__init__", "")
             module_name_list.append(module_name)
 
-    return list(set(module_name_list) - EXCLUDE_MODULE_LIST)
+    modules = []
+    module_name_list = list(set(module_name_list))
+    for mod in module_name_list:
+        exclude = False
+        for ex in EXCLUDE_MODULE_LIST:
+            m = re.match(ex, mod)
+            if m:
+                exclude = True
+        if not exclude:
+            modules.append(mod)
+
+    return modules
 
 
 def import_modules(module_name_list: List[str]) -> List:
