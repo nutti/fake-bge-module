@@ -57,7 +57,7 @@ jobs:
         run: bash tests/run_pre_tests.sh src
 
       - name: Install UPBGE binary dependencies
-        run: sudo apt-get update && sudo apt-get install -y libglu1-mesa libegl1 libavformat-dev libavdevice-dev libboost-locale-dev libopenimageio-dev
+        run: sudo apt-get update && sudo apt-get install -y libglu1-mesa libegl1 libavformat-dev libavdevice-dev libboost-locale-dev libopenimageio-dev libtbb-dev
 
       - name: Install fake-bge-module tools
         run: sudo apt-get install -y pandoc
