@@ -3,8 +3,7 @@ name: fake-bge-module CI
 on:
   push:
     branches:
-      # Temporarily trigger only on "ci_testing" branch
-      - ci_testing
+      - 'run-ci/**'
       - master
     tags:
       - '[0-9]+'
