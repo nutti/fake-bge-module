@@ -2,7 +2,7 @@
 set -eEu
 
 if [ $# -ne 4 ]; then
-    echo "Usage: pylint_test.sh <target> <target-version> <blender-source-dir> <fake-module-wheel-file>"
+    echo "Usage: pylint_test.sh <target> <target-version> <target-source-dir> <fake-bpy-wheel-file>"
     exit 1
 fi
 
@@ -18,9 +18,9 @@ declare -r IGNORED_PYLINT_ERRORS=(
 declare -r SUPPORTED_BLENDER_VERSIONS=(
     "2.78" "2.79" "2.80" "2.81" "2.82" "2.83"
     "2.90" "2.91" "2.92" "2.93"
+    "3.0" "3.1" "3.2" "3.3" "3.4"
     "latest"
 )
-
 declare -r SUPPORTED_UPBGE_VERSIONS=(
     "0.2.5"
     "latest"
@@ -37,9 +37,13 @@ declare -A BLENDER_TAG_NAME=(
     ["v2.91"]="v2.91.0"
     ["v2.92"]="v2.92.0"
     ["v2.93"]="v2.93.0"
-    ["vlatest"]="master"
+    ["v3.0"]="v3.0.0"
+    ["v3.1"]="v3.1.0"
+    ["v3.2"]="v3.2.0"
+    ["v3.3"]="v3.3.0"
+    ["v3.4"]="v3.4.0"
+    ["vlatest"]="main"
 )
-
 declare -A UPBGE_TAG_NAME=(
     ["v0.2.5"]="v0.2.5"
     ["vlatest"]="master"
@@ -53,7 +57,7 @@ PYTHON_BIN=${PYTHON_BIN:-python}
 
 # check if the specified version is supported
 supported=0
-if [ ${target} = "blender" ]; then
+if [ "${target}" = "blender" ]; then
     for v in "${SUPPORTED_BLENDER_VERSIONS[@]}"; do
         if [ "${v}" = "${version}" ]; then
             supported=1
@@ -64,7 +68,7 @@ if [ ${target} = "blender" ]; then
         echo "Supported version is ${SUPPORTED_BLENDER_VERSIONS[*]}."
         exit 1
     fi
-elif [ ${target} = "upbge" ]; then
+elif [ "${target}" = "upbge" ]; then
     for v in "${SUPPORTED_UPBGE_VERSIONS[@]}"; do
         if [ "${v}" = "${version}" ]; then
             supported=1
@@ -105,7 +109,7 @@ function get_remote_git_ref() {
     # 2. If multiple are found, take first one (head -n 1)
     # 3. Only save hash (cut -f1)
     local remote_ref
-    remote_ref="$(git ls-remote origin $ref | head -n 1 | cut -f1)"
+    remote_ref="$(git ls-remote origin "$ref" | head -n 1 | cut -f1)"
 
     # if remote ref was not found, it probably was a git hash
     if [ -z "${remote_ref}" ]; then
@@ -133,6 +137,7 @@ function create_pylintrc() {
     echo "Generating ${pylintrc}"
 
     echo > "${pylintrc}"
+    # shellcheck disable=SC2129
     echo "[MESSAGES CONTROL]" >> "${pylintrc}"
     echo "disable=${disabled_pylint_warning}" >> "${pylintrc}"
 
@@ -145,8 +150,8 @@ function workaround_quirks() {
     local target=$1
     local version=$2
 
-    if [ $target = "blender" ]; then
-        if [[ $version =~ ^2.8[0-9]$ || $version =~ ^2.9[0-9]$ || $version =~ ^latest$ ]]; then
+    if [ "${target}" = "blender" ]; then
+        if [[ $version =~ ^2.8[0-9]$ || $version =~ ^2.9[0-9]$ || $version =~ ^3.[0-9]$ || $version =~ ^latest$ ]]; then
             # The method draw_panel_header comes from the Panel class which is a base class of CYCLES_PT_sampling_presets.
             # The error "E1120: No value for argument 'layout'" is raised when calling the classmethod implicitly derived
             # from base class. It is not clear why pylint does not handle this gracefully, so "fixing" it for pylint.
@@ -161,7 +166,7 @@ function workaround_quirks() {
         fi
 
         if [[ $version =~ ^2.7[89]$ ]]; then
-            # bpy.types.XXX related Cycle add-on classes are not provided by fake-module
+            # bpy.types.XXX related Cycle add-on classes are  not provided by fake-bpy-module
             echo "Fixing cycles class: \".bpy.types.CYCLES_MT_[a-z]*_presets\""
             sed -i 's/bpy.types.\(CYCLES_MT_[a-z]*_presets\)/\1/' intern/cycles/blender/addon/ui.py
         fi
@@ -171,7 +176,7 @@ function workaround_quirks() {
             echo "Ignoring pylint bug: https://github.com/PyCQA/pylint/issues/801"
             sed -i '/^\s*if hasattr(.*/i # pylint: disable=no-member' intern/cycles/blender/addon/*.py
         fi
-    elif [ $target = "upbge" ]; then
+    elif [ "${target}" = "upbge" ]; then
         if [[ $version =~ ^latest$ ]]; then
             # The method draw_panel_header comes from the Panel class which is a base class of CYCLES_PT_sampling_presets.
             # The error "E1120: No value for argument 'layout'" is raised when calling the classmethod implicitly derived
@@ -223,9 +228,9 @@ pip install numpy
 # Enter source
 pushd "${source_dir}"
 
-if [ ${target} = "blender" ]; then
+if [ "${target}" = "blender" ]; then
     git_tag="${BLENDER_TAG_NAME[v${version}]}"
-elif [ ${target} = "upbge" ]; then
+elif [ "${target}" = "upbge" ]; then
     git_tag="${UPBGE_TAG_NAME[v${version}]}"
 fi
 remote_git_ref="$(get_remote_git_ref "${git_tag}")"
@@ -243,7 +248,7 @@ cat "${pylintrcpath}"
 echo
 
 # Fixing addon code to workaround some quirks
-workaround_quirks ${target} ${version}
+workaround_quirks "${target}" "${version}"
 echo
 
 # Expect failure before fake-module is installed, otherwise following test has no meaning
@@ -262,7 +267,7 @@ popd > /dev/null
 echo
 pip install "${fake_module_wheel}"
 
-# Re-enter blender source
+# Re-enter source
 pushd "${source_dir}" > /dev/null
 
 # Run the "real" test now

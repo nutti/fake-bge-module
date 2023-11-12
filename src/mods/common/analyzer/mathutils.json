@@ -48,11 +48,239 @@
           "type": "method",
           "module": "mathutils",
           "parameters": [
-            "val"
+            "rgb=(0.0, 0.0, 0.0)"
           ],
           "return": {
             "type": "return",
             "data_type": ""
+          }
+        },
+        {
+          "name": "__add__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "`Color`"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Color`"
+          }
+        },
+        {
+          "name": "__sub__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "`Color`"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Color`"
+          }
+        },
+        {
+          "name": "__mul__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "int, float"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Color`"
+          }
+        },
+        {
+          "name": "__truediv__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "int, float"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Color`"
+          }
+        },
+        {
+          "name": "__radd__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "`Color`"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Color`"
+          }
+        },
+        {
+          "name": "__rsub__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "`Color`"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Color`"
+          }
+        },
+        {
+          "name": "__rmul__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "int, float"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Color`"
+          }
+        },
+        {
+          "name": "__rtruediv__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "int, float"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Color`"
+          }
+        },
+        {
+          "name": "__iadd__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "`Color`"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Color`"
+          }
+        },
+        {
+          "name": "__isub__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "`Color`"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Color`"
+          }
+        },
+        {
+          "name": "__imul__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "int, float"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Color`"
+          }
+        },
+        {
+          "name": "__itruediv__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "int, float"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Color`"
           }
         }
       ]
@@ -67,7 +295,8 @@
           "type": "method",
           "module": "mathutils",
           "parameters": [
-            "val"
+            "angles=(0.0, 0.0, 0.0)",
+            "order='XYZ'"
           ],
           "return": {
             "type": "return",
@@ -86,11 +315,212 @@
           "type": "method",
           "module": "mathutils",
           "parameters": [
-            "val"
+            "rows=((1.0, 0.0, 0.0, 0.0), (0.0, 1.0, 0.0, 0.0), (0.0, 0.0, 1.0, 0.0), (0.0, 0.0, 0.0, 1.0))"
           ],
           "return": {
             "type": "return",
             "data_type": ""
+          }
+        },
+        {
+          "name": "__len__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [],
+          "parameter_details": [],
+          "return": {
+            "type": "return",
+            "data_type": "int"
+          }
+        },
+        {
+          "name": "__add__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "`Matrix`"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Matrix`"
+          }
+        },
+        {
+          "name": "__sub__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "`Matrix`"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Matrix`"
+          }
+        },
+        {
+          "name": "__mul__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "int, float"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Matrix`"
+          }
+        },
+        {
+          "name": "__matmul__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "`Matrix`, `Vector`"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Matrix`, `Vector`"
+          }
+        },
+        {
+          "name": "__radd__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "`Matrix`"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Matrix`"
+          }
+        },
+        {
+          "name": "__rsub__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "`Matrix`"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Matrix`"
+          }
+        },
+        {
+          "name": "__rmul__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "int, float"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Matrix`"
+          }
+        },
+        {
+          "name": "__rmatmul__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "`Matrix`"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Matrix`"
+          }
+        },
+        {
+          "name": "__imul__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "int, float"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Matrix`"
+          }
+        },
+        {
+          "name": "__imatmul__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "`Matrix`"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Matrix`"
           }
         }
       ]
@@ -105,11 +535,256 @@
           "type": "method",
           "module": "mathutils",
           "parameters": [
-            "val"
+            "seq=(1.0, 0.0, 0.0, 0.0)"
           ],
           "return": {
             "type": "return",
             "data_type": ""
+          }
+        },
+        {
+          "name": "__len__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [],
+          "parameter_details": [],
+          "return": {
+            "type": "return",
+            "data_type": "int"
+          }
+        },
+        {
+          "name": "__getitem__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "key"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "key",
+              "data_type": "int"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "float"
+          }
+        },
+        {
+          "name": "__setitem__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "key",
+            "value"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "key",
+              "data_type": "int"
+            },
+            {
+              "type": "parameter",
+              "name": "value",
+              "data_type": "float"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "float"
+          }
+        },
+        {
+          "name": "__add__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "`Quaternion`"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Quaternion`"
+          }
+        },
+        {
+          "name": "__sub__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "`Quaternion`"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Quaternion`"
+          }
+        },
+        {
+          "name": "__mul__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "int, float, `Quaternion`"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Quaternion`"
+          }
+        },
+        {
+          "name": "__matmul__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "`Vector`, `Quaternion`"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Vector`, `Quaternion`"
+          }
+        },
+        {
+          "name": "__radd__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "`Quaternion`"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Quaternion`"
+          }
+        },
+        {
+          "name": "__rsub__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "`Quaternion`"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Quaternion`"
+          }
+        },
+        {
+          "name": "__rmul__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "int, float, `Quaternion`"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Quaternion`"
+          }
+        },
+        {
+          "name": "__rmatmul__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "`Vector`"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Vector`"
+          }
+        },
+        {
+          "name": "__imul__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "int, float, `Quaternion`"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Quaternion`"
+          }
+        },
+        {
+          "name": "__imatmul__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "`Vector`"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Vector`"
           }
         }
       ]
@@ -124,11 +799,362 @@
           "type": "method",
           "module": "mathutils",
           "parameters": [
-            "val"
+            "seq=(0.0, 0.0, 0.0)"
           ],
           "return": {
             "type": "return",
             "data_type": ""
+          }
+        },
+        {
+          "name": "__len__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [],
+          "parameter_details": [],
+          "return": {
+            "type": "return",
+            "data_type": "int"
+          }
+        },
+        {
+          "name": "__getitem__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "key"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "key",
+              "data_type": "int"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "float"
+          }
+        },
+        {
+          "name": "__setitem__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "key",
+            "value"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "key",
+              "data_type": "int"
+            },
+            {
+              "type": "parameter",
+              "name": "value",
+              "data_type": "float"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "float"
+          }
+        },
+        {
+          "name": "__neg__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [],
+          "parameter_details": [],
+          "return": {
+            "type": "return",
+            "data_type": "`Vector`"
+          }
+        },
+        {
+          "name": "__add__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "`Vector`"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Vector`"
+          }
+        },
+        {
+          "name": "__sub__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "`Vector`"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Vector`"
+          }
+        },
+        {
+          "name": "__mul__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "int, float"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Vector`"
+          }
+        },
+        {
+          "name": "__truediv__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "int, float"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Vector`"
+          }
+        },
+        {
+          "name": "__matmul__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "`Matrix`"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Vector`"
+          }
+        },
+        {
+          "name": "__radd__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "`Vector`"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Vector`"
+          }
+        },
+        {
+          "name": "__rsub__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "`Vector`"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Vector`"
+          }
+        },
+        {
+          "name": "__rmul__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "int, float"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Vector`"
+          }
+        },
+        {
+          "name": "__rtruediv__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "int, float"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Vector`"
+          }
+        },
+        {
+          "name": "__rmatmul__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "`Matrix`"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Vector`"
+          }
+        },
+        {
+          "name": "__iadd__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "`Vector`"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Vector`"
+          }
+        },
+        {
+          "name": "__isub__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "`Vector`"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Vector`"
+          }
+        },
+        {
+          "name": "__imul__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "int, float"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Vector`"
+          }
+        },
+        {
+          "name": "__itruediv__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "int, float"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Vector`"
+          }
+        },
+        {
+          "name": "__imatmul__",
+          "type": "method",
+          "module": "mathutils",
+          "parameters": [
+            "other"
+          ],
+          "parameter_details": [
+            {
+              "type": "parameter",
+              "name": "other",
+              "data_type": "`Matrix`"
+            }
+          ],
+          "return": {
+            "type": "return",
+            "data_type": "`Vector`"
           }
         }
       ]

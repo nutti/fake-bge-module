@@ -137,9 +137,9 @@ function download_upbge() {
     echo "Extracting UPBGE ${ver} using \"${extractor%% *}\"."
     ${extractor} "${filepath}"
 
-    if [ ! ${move_from} = "" ]; then
+    if [ ! "${move_from}" = "" ]; then
         echo "Moving downloaded UPBGE ${ver} files from \"${move_from}\" to \"${targetpath}\"."
-        mv ${move_from}/* .
+        mv "${move_from}"/* .
     fi
 
     # go back to download folder
@@ -148,8 +148,8 @@ function download_upbge() {
 
 function wait_for_all() {
     local status=0
-    for pid in $@; do
-        wait ${pid} &&:
+    for pid in "$@"; do
+        wait "${pid}" &&:
         (exit $?) && (exit ${status}) &&:; status=$?
     done
     if [ ${status} -ne 0 ]; then
@@ -158,6 +158,7 @@ function wait_for_all() {
 }
 
 function check_os() {
+    # shellcheck disable=SC2003,SC2308,SC2046
     if [ "$(uname)" == "Darwin" ]; then
         echo "Mac"
     elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
@@ -184,48 +185,48 @@ if [ -z "${output_dir}" ]; then
 fi
 
 # check operating system
-os=`check_os`
+os=$(check_os)
 echo "Operating System is ${os}"
 
 # check if the specified version is supported
 supported=0
 for v in "${SUPPORTED_VERSIONS[@]}"; do
-    if [ ${v} = ${version} ]; then
+    if [ "${v}" = "${version}" ]; then
         supported=1
     fi
 done
 if [ ${supported} -eq 0 ]; then
     echo "${version} is not supported."
-    echo "Supported version is ${SUPPORTED_VERSIONS[@]}."
+    echo "Supported version is ${SUPPORTED_VERSIONS[*]}."
     exit 1
 fi
 
-if [ ${version} = "all" ]; then
+if [ "${version}" = "all" ]; then
     pids=()
-    if [ ${os} == "Linux" ]; then
-        for KEY in ${!UPBGE_DOWNLOAD_URL_LINUX[@]}; do
+    if [ "${os}" == "Linux" ]; then
+        for KEY in "${!UPBGE_DOWNLOAD_URL_LINUX[@]}"; do
             url=${UPBGE_DOWNLOAD_URL_LINUX[${KEY}]}
             move_from=""
             if [[ "${NEED_MOVE_LINUX[${KEY}]+_}" == "_" ]]; then
                 move_from=${NEED_MOVE_LINUX[${KEY}]}
             fi
-            download_upbge ${KEY} ${url} ${move_from} &
+            download_upbge "${KEY}" "${url}" "${move_from}" &
             pids+=($!)
         done
     else
         echo "Not supported operating system (OS=${os})"
         exit 1
     fi
-    wait_for_all ${pids[@]}
+    wait_for_all "${pids[@]}"
 else
-    if [ ${os} == "Linux" ]; then
+    if [ "${os}" == "Linux" ]; then
         ver=v${version}
         url=${UPBGE_DOWNLOAD_URL_LINUX[${ver}]}
         move_from=""
         if [[ "${NEED_MOVE_LINUX[${ver}]+_}" == "_" ]]; then
             move_from=${NEED_MOVE_LINUX[${ver}]}
         fi
-        download_upbge ${ver} ${url} ${move_from}
+        download_upbge "${ver}" "${url}" "${move_from}"
     else
         echo "Not supported operating system (OS=${os})"
         exit 1

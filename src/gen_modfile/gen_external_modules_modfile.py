@@ -1,4 +1,4 @@
-################################################################################
+##############################################################################
 #
 # gen_module_modfile.py
 #
@@ -25,9 +25,8 @@
 #       specified directory.
 #       (ex. gen_modules_modfile.generated)
 #
-################################################################################
+##############################################################################
 
-import re
 import sys
 import inspect
 import os
@@ -35,17 +34,17 @@ import importlib
 import json
 import argparse
 from typing import List, Dict
-import bpy
+import bpy      # pylint: disable=E0401
 
 
 EXCLUDE_MODULE_LIST = {
-    r"bl_i18n_utils\.settings_user",
-    r"bl_i18n_utils\.utils_spell_check",
-    r"bl_app_templates_system\.2D_Animation",
-    r"bl_app_templates_system\.Sculpting",
-    r"bl_app_templates_system\.VFX",
-    r"bl_app_templates_system\.Video_Editing",
-    r"bgui\.*",
+    "bl_i18n_utils.settings_user",
+    "bl_i18n_utils.utils_spell_check",
+    "bl_app_templates_system.2D_Animation",
+    "bl_app_templates_system.Sculpting",
+    "bl_app_templates_system.VFX",
+    "bl_app_templates_system.Video_Editing",
+    "bgui.bgui_utils",
 }
 
 
@@ -71,23 +70,13 @@ def get_module_name_list(config: 'GenerationConfig') -> List[str]:
         for f in files:
             if not f.endswith(".py"):
                 continue
-            module_name = os.path.join(cur_dir, f).replace(modules_dir + separator(), "")
+            module_name = os.path.join(cur_dir, f).replace(
+                modules_dir + separator(), "")
             module_name = module_name[:-3].replace(separator(), ".")
             module_name = module_name.replace(".__init__", "")
             module_name_list.append(module_name)
 
-    modules = []
-    module_name_list = list(set(module_name_list))
-    for mod in module_name_list:
-        exclude = False
-        for ex in EXCLUDE_MODULE_LIST:
-            m = re.match(ex, mod)
-            if m:
-                exclude = True
-        if not exclude:
-            modules.append(mod)
-
-    return modules
+    return list(set(module_name_list) - EXCLUDE_MODULE_LIST)
 
 
 def import_modules(module_name_list: List[str]) -> List:
@@ -97,8 +86,9 @@ def import_modules(module_name_list: List[str]) -> List:
         mod["module"] = importlib.import_module(name)
         mod["module_name"] = name
         imported_modules.append(mod)
-    
+
     return imported_modules
+
 
 def analyze_function(module_name: str, function, is_method=False) -> Dict:
     function_def = {
@@ -113,10 +103,11 @@ def analyze_function(module_name: str, function, is_method=False) -> Dict:
 
     if not inspect.isbuiltin(function[1]):
         try:
-            function_def["parameters"] = list(inspect.signature(function[1]).parameters.keys())
+            function_def["parameters"] = list(
+                inspect.signature(function[1]).parameters.keys())
         except ValueError:
             function_def["parameters"] = []
-    
+
     return function_def
 
 
@@ -136,9 +127,10 @@ def analyze_class(module_name: str, class_) -> Dict:
             continue
         if c.__module__ == "builtins":
             continue
-        class_def["base_classes"].append("{}.{}".format(c.__module__, c.__name__))
+        class_def["base_classes"].append(
+            "{}.{}".format(c.__module__, c.__name__))  # pylint: disable=C0209
 
-    for x in [x for x in inspect.getmembers(class_[1])]:
+    for x in inspect.getmembers(class_[1]):
         if x[0].startswith("_"):
             continue        # Skip private methods and attributes.
 
@@ -154,7 +146,7 @@ def analyze_class(module_name: str, class_) -> Dict:
                 "module": module_name,
             }
             class_def["attributes"].append(attribute_def)
-    
+
     return class_def
 
 
@@ -174,7 +166,8 @@ def analyze_module(module_name: str, module) -> Dict:
             continue    # Remove indirect classes. (ex. from XXX import ZZZ)
         class_def = analyze_class(module_name, c)
 
-        # To avoid circular dependency, we remove classes whose base class is defined in bpy.types module.
+        # To avoid circular dependency, we remove classes whose base class is
+        # defined in bpy.types module.
         has_bpy_types_base_class = False
         for bc in class_def["base_classes"]:
             if bc.find("bpy.types.") != -1:
@@ -194,14 +187,15 @@ def analyze_module(module_name: str, module) -> Dict:
             continue    # Remove indirect functions. (ex. from XXX import ZZZ)
 
         result["functions"].append(analyze_function(module_name, f))
-    
+
     return result
 
 
 def analyze(modules: List) -> Dict:
     results = {}
     for m in modules:
-        results[m["module_name"]] = analyze_module(m["module_name"], m["module"])
+        results[m["module_name"]] = analyze_module(
+            m["module_name"], m["module"])
 
     return results
 
@@ -215,7 +209,7 @@ def write_to_modfile(info: Dict, config: 'GenerationConfig'):
         if index != -1:
             package_name = package_name[:index]
 
-        if package_name not in data.keys():
+        if package_name not in data:
             data[package_name] = {
                 "new": []
             }
@@ -228,7 +222,9 @@ def write_to_modfile(info: Dict, config: 'GenerationConfig'):
 
     os.makedirs(config.output_dir, exist_ok=True)
     for pkg, d in data.items():
-        with open("{}/{}.json".format(config.output_dir, pkg), "w") as f:
+        # pylint: disable=C0209
+        with open("{}/{}.json".format(config.output_dir, pkg), "w",
+                  encoding="utf-8") as f:
             json.dump(d, f, indent=4, sort_keys=True, separators=(",", ": "))
 
 
@@ -248,7 +244,7 @@ def get_alias_to_bpy_types(results):
                     "type": "constant",
                     "name": c["name"],
                     "module": "bpy.types",
-                    "data_type": "{}.{}".format(c["module"], c["name"]),
+                    "data_type": "`{}.{}`".format(c["module"], c["name"]),    # noqa # pylint: disable=C0209
                 }
                 alias["constants"].append(constant_def)
 
@@ -260,13 +256,14 @@ def parse_options() -> 'GenerationConfig':
     argv = sys.argv
     try:
         index = argv.index("--") + 1
-    except:
+    except:     # noqa # pylint: disable=W0702
         index = len(argv)
     argv = argv[index:]
 
-    usage = """Usage: blender -noaudio --factory-startup --background --python
-               {} -- [-m <first_import_module_name>] [-a] [-o <output_dir>]"""\
-        .format(__file__)
+    # pylint: disable=C0209
+    usage = "Usage: blender -noaudio --factory-startup --background " \
+            "--python {} -- [-m <first_import_module_name>] [-a] " \
+            "[-o <output_dir>]".format(__file__)
     parser = argparse.ArgumentParser(usage)
     parser.add_argument(
         "-m", dest="first_import_module_name", type=str,
@@ -276,7 +273,8 @@ def parse_options() -> 'GenerationConfig':
         required=True
     )
     parser.add_argument(
-        "-o", dest="output_dir", type=str, help="Output directory.", required=True
+        "-o", dest="output_dir", type=str, help="Output directory.",
+        required=True
     )
     parser.add_argument("-a", dest="output_alias", action="store_true")
     args = parser.parse_args(argv)

@@ -10,9 +10,10 @@ class FakeBpyModuleTestConfig:
 
 
 def parse_options(config: FakeBpyModuleTestConfig):
-    usage = "Usage: python {} [-p <modules_path>]".format(__file__)
+    usage = f"Usage: python {__file__} [-p <modules_path>]"
     parser = argparse.ArgumentParser(usage)
-    parser.add_argument("-p", dest="modules_path", type=str, help="fake-bpy-module path")
+    parser.add_argument(
+        "-p", dest="modules_path", type=str, help="fake-module path")
 
     args = parser.parse_args()
     if args.modules_path:
@@ -27,11 +28,12 @@ def main():
     sys.path.append(path)
 
     sys.path.append(os.path.dirname(__file__))
-    import fake_bpy_module_test
+    import fake_bpy_module_test     # pylint: disable=C0415
 
     test_cases = [
         fake_bpy_module_test.analyzer_test.BaseAnalyzerTest,
         fake_bpy_module_test.analyzer_test.AnalyzerWithModFileTest,
+        fake_bpy_module_test.analyzer_test.BpyModuleAnalyzerTest,
         fake_bpy_module_test.dag_test.DAGTest,
         fake_bpy_module_test.generator_test.CodeWriterIndentTest,
         fake_bpy_module_test.generator_test.CodeWriterTest,

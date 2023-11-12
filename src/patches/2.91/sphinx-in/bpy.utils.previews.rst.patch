@@ -1,0 +1,10 @@
+--- gen_module-tmp/sphinx-in.orig/bpy.utils.previews.rst	2020-11-07 18:26:43.821464000 +0100
++++ gen_module-tmp/sphinx-in/bpy.utils.previews.rst	2020-11-07 18:26:43.991464000 +0100
+@@ -73,7 +73,6 @@
+       :type name: string
+       :return: The Preview matching given name, or a new empty one.
+       :rtype: :class:`bpy.types.ImagePreview`
+-      :rtype: :class:`bpy.types.ImagePreview`
+       :raises KeyError: if ``name`` already exists.
+ 
+ 

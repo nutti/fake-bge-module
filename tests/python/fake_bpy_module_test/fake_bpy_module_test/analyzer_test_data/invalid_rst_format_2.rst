@@ -9,5 +9,5 @@
    function_1 description long long long
 long long long
 
-   :arg: invalid
+   .. function:: invalid
 
