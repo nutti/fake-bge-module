@@ -348,8 +348,7 @@ class BaseGenerator:
                 else:
                     output_log(
                         LOG_LEVEL_WARN,
-                        f"Base class node (type={dtype}) is "
-                        "not found")
+                        f"Base class node (type={dtype}) is not found")
         sorted_nodes = topological_sort(graph)
         sorted_class_data = [node.data() for node in sorted_nodes]
 
@@ -653,27 +652,33 @@ class PackageAnalyzer:
             self, analyze_result: AnalysisResult,
             module_structure: 'ModuleStructure') -> 'GenerationInfoByRule':
         def find_target_file(
-                name: str, structure: 'ModuleStructure', target: str) -> str:
+                name: str, structure: 'ModuleStructure', target: str,
+                module_level: int) -> str:
             for m in structure.children():
                 mod_name = name + m.name
                 if mod_name == target:
-                    if len(m.children()) == 0:
+                    if len(m.children()) == 0 and module_level != 0:
                         return mod_name + ".py"
                     return mod_name + "/__init__.py"
 
                 if len(m.children()) > 0:
-                    ret = find_target_file(mod_name + "/", m, target)
+                    ret = find_target_file(
+                        mod_name + "/", m, target, module_level+1)
                     if ret:
                         return ret
             return None
 
         def build_child_modules(
                 gen_info: 'GenerationInfoByRule', name: str,
-                structure: 'ModuleStructure'):
+                structure: 'ModuleStructure', module_level: int):
             for m in structure.children():
                 mod_name = name + m.name
                 if len(m.children()) == 0:
-                    filename = re.sub(r"\.", "/", mod_name) + ".py"
+                    if module_level != 0:
+                        filename = re.sub(r"\.", "/", mod_name) + ".py"
+                    else:
+                        filename = \
+                            re.sub(r"\.", "/", mod_name) + "/__init__.py"
                     info = gen_info.create_target(filename)
                     info.data = []
                     info.child_modules = []
@@ -684,17 +689,18 @@ class PackageAnalyzer:
                     info.data = []
                     info.child_modules = [child.name for child in m.children()]
                     info.name = mod_name
-                    build_child_modules(gen_info, mod_name + ".", m)
+                    build_child_modules(
+                        gen_info, mod_name + ".", m, module_level+1)
 
         # build child modules
         generator_info = GenerationInfoByRule()
-        build_child_modules(generator_info, "", module_structure)
+        build_child_modules(generator_info, "", module_structure, 0)
 
         # build data
         for section in analyze_result.section_info:
             for info in section.info_list:
                 target = find_target_file("", module_structure,
-                                          re.sub(r"\.", "/", info.module()))
+                                          re.sub(r"\.", "/", info.module()), 0)
                 if target is None:
                     raise RuntimeError("Could not find target file to "
                                        f"generate (target: {info.module()})")
@@ -896,7 +902,10 @@ class PackageAnalyzer:
             elif info.type() == "class":
                 for a in info.attributes():
                     refined_type = refiner.get_refined_data_type(
-                        a.data_type(), info.module(), 'CLS_ATTR')
+                        a.data_type(), info.module(), 'CLS_ATTR',
+                        additional_info={
+                            "self_class": f"{info.module()}.{info.name()}"
+                        })
                     a.set_data_type(refined_type)
                 for m in info.methods():
                     p: ParameterDetailInfo
@@ -905,21 +914,29 @@ class PackageAnalyzer:
                             m.parameters(), p)
                         refined_type = refiner.get_refined_data_type(
                             p.data_type(), info.module(), 'FUNC_ARG',
-                            parameter_str=parameter)
+                            parameter_str=parameter,
+                            additional_info={
+                                "self_class": f"{info.module()}.{info.name()}"
+                            })
                         p.set_data_type(refined_type)
 
                     return_ = m.return_()
                     if return_ is not None:
                         refined_type = refiner.get_refined_data_type(
-                            return_.data_type(), info.module(), 'FUNC_RET')
+                            return_.data_type(), info.module(), 'FUNC_RET',
+                            additional_info={
+                                "self_class": f"{info.module()}.{info.name()}"
+                            })
                         return_.set_data_type(refined_type)
 
                 remove_classes = []
                 for i, c in enumerate(info.base_classes()):
                     refined_type = refiner.get_refined_data_type(
-                        c, info.module(), 'CLS_BASE')
+                        c, info.module(), 'CLS_BASE',
+                        additional_info={
+                            "self_class": f"{info.module()}.{info.name()}"
+                        })
                     if refined_type.type() == 'UNKNOWN':
-                        print("@@@@")
                         remove_classes.append(c)
                     else:
                         info.set_base_class(i, refined_type)
@@ -1219,18 +1236,25 @@ class PackageGenerator:
     # create module directories/files
     def _create_empty_modules(self, package_structure: 'ModuleStructure'):
         def make_module_dirs(base_path: str, structure: 'ModuleStructure'):
-            def make_dir(path, structure_: 'ModuleStructure'):
+            def make_dir(path, structure_: 'ModuleStructure',
+                         module_level: int):
                 for item in structure_.children():
-                    if len(item.children()) >= 1:
+                    if len(item.children()) == 0:
+                        if module_level == 0:
+                            dir_path = path + "/" + item.name
+                            pathlib.Path(dir_path).mkdir(
+                                parents=True, exist_ok=True)
+                            self._create_py_typed_file(dir_path)
+                    elif len(item.children()) >= 1:
                         dir_path = path + "/" + item.name
                         pathlib.Path(dir_path).mkdir(
                             parents=True, exist_ok=True)
                         self._create_py_typed_file(dir_path)
                         if dir_path == base_path:
                             continue
-                        make_dir(dir_path, item)
+                        make_dir(dir_path, item, module_level+1)
 
-            make_dir(base_path, structure)
+            make_dir(base_path, structure, 0)
 
         make_module_dirs(self._config.output_dir, package_structure)
 

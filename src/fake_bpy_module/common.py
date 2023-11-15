@@ -1,6 +1,7 @@
 import copy
 import re
 from typing import List, Dict, Set, Tuple
+import typing
 
 from .utils import (
     check_os,
@@ -31,10 +32,12 @@ BUILTIN_DATA_TYPE_ALIASES: Dict[str, str] = {
 
 MODIFIER_DATA_TYPE: List[str] = [
     "list", "dict", "set", "tuple",
+    "iteriter",
     "listlist", "tupletuple",
     "listtuple", "listcallable",
     "Generic",
     "typing.Iterator",
+    "typing.Iterable",
     "typing.Callable",
     "typing.Any",
     "typing.Sequence",
@@ -75,6 +78,7 @@ MODIFIER_DATA_TYPE_TO_TYPING: Dict[str, str] = {
     "tuple": "typing.Tuple",
     "Generic": "typing.Generic",
     "typing.Iterator": "typing.Iterator",
+    "typing.Iterable": "typing.Iterable",
     "typing.Callable": "typing.Callable",
     "typing.Sequence": "typing.Sequence",
     "typing.Any": "typing.Any",
@@ -287,6 +291,8 @@ class BuiltinDataType(DataType):
                 return f"typing.Tuple[{', '.join(inner_str)}]"
         elif self._modifier.modifier_data_type() == "listlist":
             return f"typing.List[typing.List[{self._data_type}]]"
+        elif self._modifier.modifier_data_type() == "iteriter":
+            return f"typing.Iterable[typing.Iterable[{self._data_type}]]"
         elif self._modifier.modifier_data_type() == 'listtuple':
             if self._modifier_add_info is not None:
                 return "typing.List[typing.Tuple[" \
@@ -381,6 +387,8 @@ class CustomDataType(DataType):
                     f"{', '.join(elms_strs)}]"
         elif self._modifier.modifier_data_type() == "listlist":
             return f"typing.List[typing.List['{self._data_type}']]"
+        elif self._modifier.modifier_data_type() == "iteriter":
+            return f"typing.Iterable[typing.Iterable['{self._data_type}']]"
         elif self._modifier.modifier_data_type() == "listcallable":
             return "typing.List[typing.Callable[['" \
                 f"{','.join(self._modifier_add_info['arguments'])}'], None]]"
@@ -1342,15 +1350,31 @@ class DataTypeRefiner:
     def _get_refined_data_type_fast(
             self, dtype_str: str, uniq_full_names: Set[str],
             uniq_module_names: Set[str], module_name: str,
-            variable_kind: str) -> 'DataType':
+            variable_kind: str,
+            additional_info: Dict[str, typing.Any] = None) -> 'DataType':
         # pylint: disable=R0912,R0911,R0915
         if re.match(r"^\s*$", dtype_str):
             return ModifierDataType("typing.Any")
+
+        if dtype_str == "Same type with self class":
+            s = self._parse_custom_data_type(
+                additional_info["self_class"], uniq_full_names,
+                uniq_module_names, module_name)
+            if s:
+                return CustomDataType(s)
 
         if re.match(r"^(type|object|function)$", dtype_str):
             return ModifierDataType("typing.Any")
 
         if re.match(r"^Depends on function prototype", dtype_str):
+            return ModifierDataType("typing.Any")
+
+        # [Pattern] `AnyType`
+        # [Test]
+        #   File: refiner_test.py
+        #   Function: test_get_refined_data_type_for_various_patterns
+        #   Pattern: `AnyType`
+        if re.match(r"^`AnyType`", dtype_str):
             return ModifierDataType("typing.Any")
 
         if re.match(r"^(any|Any type.)$", dtype_str):
@@ -1460,6 +1484,9 @@ class DataTypeRefiner:
             dtype_str)
         if m:
             if m.group(1) in ("int", "float"):
+                if variable_kind == 'FUNC_ARG':
+                    return BuiltinDataType(m.group(1), ModifierDataType(
+                        "typing.Iterable"))
                 return BuiltinDataType(m.group(1), CustomModifierDataType(
                     "bpy.types.bpy_prop_array"))
         # Ex: :`mathutils.Euler` rotation of 3 items in [-inf, inf],
@@ -1505,11 +1532,7 @@ class DataTypeRefiner:
         m = re.match(r"(int|float)$", dtype_str)
         if m:
             return BuiltinDataType(m.group(1))
-        m = re.match(r"^unsigned int$", dtype_str)
-        if m:
-            return BuiltinDataType("int")
-        m = re.match(r"^int \(boolean\)$", dtype_str)
-        if m:
+        if dtype_str in ("unsigned int", "int (boolean)"):
             return BuiltinDataType("int")
         m = re.match(r"^int sequence$", dtype_str)
         if m:
@@ -1586,14 +1609,15 @@ class DataTypeRefiner:
         if m:
             return BuiltinDataType("str", ModifierDataType("set"))
 
-        # Ex: sequence of string tuples or a function
+        # [Pattern] sequence of string tuples or a function
+        # [Test]
+        #   File: refiner_test.py
+        #   Function: test_get_refined_data_type_for_various_patterns
+        #   Pattern: sequence of string tuples or a function
         m = re.match(r"^sequence of string tuples or a function$", dtype_str)
         if m:
             dtypes = [
-                BuiltinDataType("int", ModifierDataType("listtuple"),
-                                modifier_add_info={
-                                    "tuple_elms": ["str", "str", "str"]
-                                }),
+                BuiltinDataType("str", ModifierDataType("iteriter")),
                 ModifierDataType("typing.Callable")
             ]
             return MixinDataType(dtypes)
@@ -1603,7 +1627,7 @@ class DataTypeRefiner:
             s = self._parse_custom_data_type(
                 m.group(1), uniq_full_names, uniq_module_names, module_name)
             if s:
-                return CustomDataType(s, ModifierDataType("typing.Sequence"))
+                return CustomDataType(s, ModifierDataType("typing.Iterable"))
         # Ex: `bpy_prop_collection` of `ThemeStripColor`,
         #     (readonly, never None)
         m = re.match(
@@ -2046,13 +2070,15 @@ class DataTypeRefiner:
 
     def get_refined_data_type(
             self, data_type: 'DataType', module_name: str,
-            variable_kind: str, parameter_str: str = None) -> 'DataType':
+            variable_kind: str, parameter_str: str = None,
+            additional_info: Dict[str, typing.Any] = None) -> 'DataType':
 
         assert variable_kind in (
             'FUNC_ARG', 'FUNC_RET', 'CONST', 'CLS_ATTR', 'CLS_BASE')
 
         result = self._get_refined_data_type_internal(
-            data_type, module_name, variable_kind, parameter_str)
+            data_type, module_name, variable_kind, parameter_str,
+            additional_info)
 
         self._tweak_metadata(result, variable_kind)
 
@@ -2066,7 +2092,8 @@ class DataTypeRefiner:
 
     def _get_refined_data_type_internal(
             self, data_type: 'DataType', module_name: str,
-            variable_kind: str, parameter_str: str) -> 'DataType':
+            variable_kind: str, parameter_str: str,
+            additional_info: Dict[str, typing.Any] = None) -> 'DataType':
 
         dtype_str = data_type.to_string()
         metadata, dtype_str = self._build_metadata(
@@ -2098,7 +2125,7 @@ class DataTypeRefiner:
             for s in sp:
                 d = self._get_refined_data_type_fast(
                     s.strip(), uniq_full_names, uniq_module_names,
-                    module_name, variable_kind)
+                    module_name, variable_kind, additional_info)
                 if d:
                     dtypes.append(d.data_type())
             if len(dtypes) >= 1:
@@ -2112,7 +2139,7 @@ class DataTypeRefiner:
 
         result = self._get_refined_data_type_fast(
             dtype_str, uniq_full_names, uniq_module_names, module_name,
-            variable_kind)
+            variable_kind, additional_info)
         if result is not None:
             result.set_is_optional(is_optional)
             result.set_metadata(metadata)
@@ -2131,7 +2158,7 @@ class DataTypeRefiner:
                 s = s.strip()
                 result = self._get_refined_data_type_fast(
                     s, uniq_full_names, uniq_module_names, module_name,
-                    variable_kind)
+                    variable_kind, additional_info)
                 if result is not None:
                     if result.type() in ['BUILTIN', 'CUSTOM', 'MODIFIER']:
                         dtypes.append(result)
