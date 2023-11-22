@@ -28,6 +28,26 @@ You can also generate and install modules manually.
 fake-bge-module is registered to PyPI.  
 You can install it as a pip package.
 
+#### Install a latest package
+
+If you install fake-bpy-module for Blender latest build (master branch daily
+build powered by [nutti/upbge-daily-build](https://github.com/nutti/upbge-daily-build)),
+run below command.
+
+```sh
+pip install fake-bge-module
+```
+
+or, specify version "latest".
+
+```sh
+pip install fake-bge-module-latest
+```
+
+#### Install a version specific package
+
+If you want to install a version specific package, run below command.
+
 ```sh
 pip install fake-bge-module-<version>
 ```
@@ -38,24 +58,17 @@ If you install fake-bge-module for UPBGE 0.2.5, run below command.
 pip install fake-bge-module-0.2.5
 ```
 
-If you install fake-bpy-module for Blender latest build (master branch daily
-build powered by [nutti/upbge-daily-build](https://github.com/nutti/upbge-daily-build)),
-run below command.
-
-```sh
-pip install fake-bge-module-latest
-```
-
 *Note: For PyCharm users, change the value `idea.max.intellisense.filesize` in
 `idea.properties` file to more than 2600 because some modules have the issue of
 being too big for intelliSense to work.*
 
-#### Supported UPBGE Version
+##### Supported UPBGE Version
 
 |Version|PyPI|
 |---|---|
 |0.2.5|[https://pypi.org/project/fake-bge-module-0.2.5/](https://pypi.org/project/fake-bge-module-0.2.5/)|
-|latest|[https://pypi.org/project/fake-bge-modulelatest/](https://pypi.org/project/fake-bge-modulelatest/)|
+|latest|[https://pypi.org/project/fake-bge-module/](https://pypi.org/project/fake-bge-module/)|
+||[https://pypi.org/project/fake-bge-module-latest/](https://pypi.org/project/fake-bge-module-latest/)|
 
 ### Install via pre-generated modules
 
