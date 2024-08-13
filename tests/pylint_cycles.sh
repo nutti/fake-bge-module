@@ -19,7 +19,7 @@ declare -r SUPPORTED_BLENDER_VERSIONS=(
     "2.78" "2.79" "2.80" "2.81" "2.82" "2.83"
     "2.90" "2.91" "2.92" "2.93"
     "3.0" "3.1" "3.2" "3.3" "3.4" "3.5" "3.6"
-    "4.0"
+    "4.0" "4.1" "4.2"
     "latest"
 )
 declare -r SUPPORTED_UPBGE_VERSIONS=(
@@ -46,6 +46,8 @@ declare -A BLENDER_TAG_NAME=(
     ["v3.5"]="v3.5.0"
     ["v3.6"]="v3.6.0"
     ["v4.0"]="v4.0.0"
+    ["v4.1"]="v4.1.0"
+    ["v4.2"]="v4.2.0"
     ["vlatest"]="main"
 )
 declare -A UPBGE_TAG_NAME=(
@@ -101,8 +103,8 @@ python_bin=$(command -v "${PYTHON_BIN}")
 
 # check if python version meets our requirements
 IFS=" " read -r -a python_version <<< "$(${python_bin} -c 'import sys; print(sys.version_info[:])' | tr -d '(),')"
-if [ "${python_version[0]}" -ne 3 ]; then
-    echo "Error: Unsupported Python version \"${python_version[0]}.${python_version[1]}\". Requiring Python 3."
+if [ "${python_version[0]}" -lt 3 ] || [[ "${python_version[0]}" -eq 3 && "${python_version[1]}" -lt 11 ]]; then
+    echo "Error: Unsupported Python version \"${python_version[0]}.${python_version[1]}\". Requiring Python 3.11 or higher."
     exit 1
 fi
 
@@ -155,50 +157,26 @@ function workaround_quirks() {
     local version=$2
 
     if [ "${target}" = "blender" ]; then
-        if [[ $version =~ ^2.8[0-9]$ || $version =~ ^2.9[0-9]$ || $version =~ ^3.[0-9]$ || $version =~ ^4.[0-9]$ || $version =~ ^latest$ ]]; then
-            # The method draw_panel_header comes from the Panel class which is a base class of CYCLES_PT_sampling_presets.
-            # The error "E1120: No value for argument 'layout'" is raised when calling the classmethod implicitly derived
-            # from base class. It is not clear why pylint does not handle this gracefully, so "fixing" it for pylint.
-            echo "Fixing pylint quirk: \".draw_panel_header(self.layout)\""
-            sed -i 's/.draw_panel_header(self.layout)/.draw_panel_header(self, layout)/' intern/cycles/blender/addon/ui.py
-
-            echo "Fixing pylint quirk: \"draw_hair_settings(self, context)\""
-            sed -i 's/draw_hair_settings(self, context)/draw_hair_settings(context)/' intern/cycles/blender/addon/ui.py
-
-            echo "Fixing pylint quirk: \"draw_curves_settings(self, context)\""
-            sed -i 's/draw_curves_settings(self, context)/draw_curves_settings(context)/' intern/cycles/blender/addon/ui.py
-        fi
-
         if [[ $version =~ ^2.7[89]$ ]]; then
             # bpy.types.XXX related Cycle add-on classes are  not provided by fake-bpy-module
             echo "Fixing cycles class: \".bpy.types.CYCLES_MT_[a-z]*_presets\""
             sed -i 's/bpy.types.\(CYCLES_MT_[a-z]*_presets\)/\1/' intern/cycles/blender/addon/ui.py
+
+            echo "Fixing pylint bug: https://github.com/pylint-dev/pylint/issues/3105"
+            sed -i 's/for \(.*\?\) in self\.devices:/for \1 in [self.devices]:/' intern/cycles/blender/addon/properties.py
         fi
 
-        if [[ $version =~ ^2.7[89]$ ]]; then
-            # pylint does not respect a `hasattr` in `if hasattr(myclass, field) and myclass.field == test`
-            echo "Ignoring pylint bug: https://github.com/PyCQA/pylint/issues/801"
-            sed -i '/^\s*if hasattr(.*/i # pylint: disable=no-member' intern/cycles/blender/addon/*.py
-        fi
+        # pylint does not respect a `hasattr` in `if hasattr(myclass, field) and myclass.field == test`
+        echo "Ignoring pylint bug: https://github.com/PyCQA/pylint/issues/801"
+        sed -i '/^\s*if hasattr(.*/i # pylint: disable=no-member' intern/cycles/blender/addon/*.py
     elif [ "${target}" = "upbge" ]; then
-        if [[ $version =~ ^latest$ ]]; then
-            # The method draw_panel_header comes from the Panel class which is a base class of CYCLES_PT_sampling_presets.
-            # The error "E1120: No value for argument 'layout'" is raised when calling the classmethod implicitly derived
-            # from base class. It is not clear why pylint does not handle this gracefully, so "fixing" it for pylint.
-            echo "Fixing pylint quirk: \".draw_panel_header(self.layout)\""
-            sed -i 's/.draw_panel_header(self.layout)/.draw_panel_header(self, layout)/' intern/cycles/blender/addon/ui.py
-
-            echo "Fixing pylint quirk: \"draw_hair_settings(self, context)\""
-            sed -i 's/draw_hair_settings(self, context)/draw_hair_settings(context)/' intern/cycles/blender/addon/ui.py
-
-            echo "Fixing pylint quirk: \"draw_curves_settings(self, context)\""
-            sed -i 's/draw_curves_settings(self, context)/draw_curves_settings(context)/' intern/cycles/blender/addon/ui.py
-        fi
-
         if [[ $version =~ ^0.2.5$ ]]; then
             # bpy.types.XXX related Cycle add-on classes are not provided by fake-module
             echo "Fixing cycles class: \".bpy.types.CYCLES_MT_[a-z]*_presets\""
             sed -i 's/bpy.types.\(CYCLES_MT_[a-z]*_presets\)/\1/' intern/cycles/blender/addon/ui.py
+
+            echo "Fixing pylint bug: https://github.com/pylint-dev/pylint/issues/3105"
+            sed -i 's/for \(.*\?\) in self\.devices:/for \1 in [self.devices]:/' intern/cycles/blender/addon/properties.py
         fi
     fi
 }

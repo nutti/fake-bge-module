@@ -1,0 +1,36 @@
+<document source="<string>">
+    <mod-type>
+        append
+    <module>
+        <name>
+            module_1
+        <description>
+    <function function_type="function">
+        <name>
+            function_1
+        <description>
+        <argument-list>
+            <argument argument_type="arg">
+                <name>
+                    arg_2
+                <description>
+                    function_1 arg_2 description
+                <default-value>
+                    10
+                <data-type-list>
+                    <data-type>
+                        function_1 arg_2 type
+        <return>
+            <description>
+            <data-type-list>
+    <function function_type="function">
+        <name>
+            function_2
+        <description>
+        <argument-list>
+        <return>
+            <description>
+                function_2 return description
+            <data-type-list>
+                <data-type>
+                    function_2 return type

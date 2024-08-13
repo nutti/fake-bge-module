@@ -1,5 +1,10 @@
 # Setup IDE: All Text Editor (Install as Python module)
 
+Tutorial Video is available on YouTube.  
+Thanks **@GDquest** for creating a great tutorial video!
+
+[![Tutorial (Video)](https://img.youtube.com/vi/IQgLBnPO2uo/0.jpg)](https://www.youtube.com/watch?v=IQgLBnPO2uo)
+
 ## 1. Check the generated modules location
 
 Check the location of the generated modules.  

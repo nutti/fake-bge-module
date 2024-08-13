@@ -1,0 +1,18 @@
+<document source="<string>">
+    <source-filename>
+        add_bpy_app_handlers_functions_data_types.rst
+    <module>
+        <name>
+            bpy.app.handlers
+        <description>
+    <data>
+        <name>
+            data_1
+        <description>
+            data_1 description
+        <data-type-list>
+            <data-type>
+                list of callable[
+                <class-ref>
+                    bpy.types.Scene
+                ]

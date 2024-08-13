@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-set -eEu
+set -eEuxo pipefail
 
 TMP_DIR_NAME=gen_module-tmp
+PROFILER_RESULT_FILENAME="profiler_result.prof"
 # shellcheck disable=SC2046,SC2155,SC2164
 {
 SCRIPT_DIR=$(cd $(dirname "$0"); pwd)
@@ -21,9 +22,16 @@ target_version=${5}
 output_dir=${6}
 mod_version=${7:-not-specified}
 current_dir=$(pwd)
-tmp_dir=${current_dir}/${TMP_DIR_NAME}
-format="pep8"
-output_log_level="warn"
+env_temporary_dir=${TEMPORARY_DIR:-not-specified}
+if [ "${env_temporary_dir}" == "not-specified" ]; then
+    tmp_dir=${current_dir}/${TMP_DIR_NAME}
+else
+    tmp_dir=${env_temporary_dir}
+fi
+
+format=${GEN_MODULE_CODE_FORMAT:-ruff}
+output_log_level=${GEN_MODULE_OUTPUT_LOG_LEVEL:-warn}
+enable_python_profiler=${ENABLE_PYTHON_PROFILER:-false}
 
 # find blender binary
 # shellcheck disable=SC2003,SC2308,SC2046
@@ -55,8 +63,8 @@ python_bin=$(command -v "${PYTHON_BIN}")
 
 echo "Checking if Python version meets the requirements ..."
 IFS=" " read -r -a python_version <<< "$(${python_bin} -c 'import sys; print(sys.version_info[:])' | tr -d '(),')"
-if [ "${python_version[0]}" -lt 3 ] || [[ "${python_version[0]}" -eq 3 && "${python_version[1]}" -lt 7 ]]; then
-    echo "Error: Unsupported python version \"${python_version[0]}.${python_version[1]}\". Requiring python 3.7 or higher."
+if [ "${python_version[0]}" -lt 3 ] || [[ "${python_version[0]}" -eq 3 && "${python_version[1]}" -lt 11 ]]; then
+    echo "Error: Unsupported python version \"${python_version[0]}.${python_version[1]}\". Requiring python 3.11 or higher."
     exit 1
 fi
 
@@ -120,19 +128,99 @@ function revert_workaround() {
 
 echo "Generating rst documents ..."
 cd "${current_dir}"
-apply_workaround
-${blender_bin} --background --factory-startup -noaudio --python-exit-code 1 --python "${source_dir}/doc/python_api/sphinx_doc_gen.py" -- --output "${tmp_dir}"
-revert_workaround
 
-# Apply patches
-#   Note: patch is made by `diff -up gen_module-tmp/sphinx-in.orig/a.rst gen_module-tmp/sphinx-in/a.rst > patches/2.XX/sphinx-in/a.rst.patch`
-cp -r "${tmp_dir}/sphinx-in" "${tmp_dir}/sphinx-in.orig"
-if [ "${mod_version}" != "not-specified" ]; then
+# Generate rst if sphinx_doc_gen.py is newer than output directory
+if [[ "${tmp_dir}/sphinx-in" -ot "${source_dir}/doc/python_api/sphinx_doc_gen.py" ]]; then
+    apply_workaround
+    ${blender_bin} --background --factory-startup -noaudio --python-exit-code 1 --python "${source_dir}/doc/python_api/sphinx_doc_gen.py" -- --output "${tmp_dir}"
+    revert_workaround
+    touch "${tmp_dir}/sphinx-in"
+    rm -rf "${tmp_dir}/sphinx-in.orig"
+fi
+
+if [[ ! -d "${tmp_dir}/sphinx-in.orig" && "${mod_version}" != "not-specified" ]]; then
+    cp -rp "${tmp_dir}/sphinx-in" "${tmp_dir}/sphinx-in.orig"
+
+    # Apply patches
+    #   Note: patch is made by `diff -up gen_module-tmp/sphinx-in.orig/a.rst gen_module-tmp/sphinx-in/a.rst > patches/2.XX/sphinx-in/a.rst.patch`
     echo "Applying patches ..."
     # shellcheck disable=SC2044
     for patch_file in $(find "${SCRIPT_DIR}/patches/${target}/${mod_version}/sphinx-in" -name "*.patch"); do
         patch -u -p2 -d "${tmp_dir}/sphinx-in" < "${patch_file}"
     done
+fi
+
+# Fix invalid rst format.
+echo "Fixing invalid rst format ..."
+if [ "${target}" = "blender" ]; then
+    if [ "${git_ref}" = "v3.5.0" ]; then
+        # :file:`XXX` -> :file: `XXX`
+        echo "  Fix: ':file:\`' -> ':file: \`"
+        # shellcheck disable=SC2044
+        for rst_file in $(find "${tmp_dir}/sphinx-in" -name "*.rst"); do
+            search_str=":file:\`"
+            replace_str=":file: \`"
+            if grep -q "${search_str}" "${rst_file}"; then
+                echo "    ${rst_file}"
+                sed -i "s/${search_str}/${replace_str}/g" "${rst_file}"
+            fi
+        done
+    elif [ "${git_ref}" = "v2.90.0" ]; then
+        #       .. note:: Takes ``O(len(nodetree.links))`` time.
+        #       (readonly)
+        # ->
+        #       .. note:: Takes ``O(len(nodetree.links))`` time.
+        #
+        #       (readonly)
+        echo "  Fix: Invalid (readonly) position"
+        # shellcheck disable=SC2044
+        for rst_file in $(find "${tmp_dir}/sphinx-in" -name "*.rst"); do
+            if ! perl -ne 'BEGIN{$/="";}{exit(1) if /(..note::.*?)\n(\s*\(readonly\))/;}' "${rst_file}"; then
+                echo "    ${rst_file}"
+                perl -i -pe 'BEGIN{$/="";}{s/(..note::.*?)\n(\s*\(readonly\))/$1\n\n$2/g;}' "${rst_file}"
+            fi
+        done
+    elif [ "${git_ref}" = "v2.78c" ] || [ "${git_ref}" = "v2.79b" ]; then
+        # .. code-block:: none -> .. code-block:: python
+        echo "  Fix: Invalid code-block argument"
+        # shellcheck disable=SC2044
+        for rst_file in $(find "${tmp_dir}/sphinx-in" -name "*.rst"); do
+            search_str=".. code-block:: none"
+            replace_str=".. code-block:: python"
+            if grep -q "${search_str}" "${rst_file}"; then
+                echo "    ${rst_file}"
+                sed -i "s/${search_str}/${replace_str}/g" "${rst_file}"
+            fi
+        done
+    fi
+elif [ "${target}" = "upbge" ]; then
+    if [ "${git_ref}" = "v0.2.5" ] || [ "${git_ref}" = "master" ]; then
+        # .. code-block:: none -> .. code-block:: python
+        echo "  Fix: Invalid code-block argument"
+        # shellcheck disable=SC2044
+        for rst_file in $(find "${tmp_dir}/sphinx-in" -name "*.rst"); do
+            search_str=".. code-block:: none"
+            replace_str=".. code-block:: python"
+            if grep -q "${search_str}" "${rst_file}"; then
+                echo "    ${rst_file}"
+                sed -i "s/${search_str}/${replace_str}/g" "${rst_file}"
+            fi
+        done
+    fi
+
+    if [ "${git_ref}" = "v0.2.5" ]; then
+        echo "  Fix: Inconsistent title levels."
+        # shellcheck disable=SC2044
+        for rst_file in $(find "${tmp_dir}/sphinx-in" -name "*.rst"); do
+            rst_file_basename=$(basename "${rst_file}")
+            if [ "${rst_file_basename}" = "bge.texture.rst" ]; then
+                search_str="+++++++++++++*"
+                replace_str=""
+                echo "    ${rst_file}"
+                sed -i "s/${search_str}/${replace_str}/g" "${rst_file}"
+            fi
+        done
+    fi
 fi
 
 echo "Generating modfiles ..."
@@ -142,24 +230,45 @@ if ! find "${blender_dir}" -type d | grep -E "/[0-9.]{3,4}/scripts/startup$"; th
     exit 1
 fi
 generated_mod_dir=${SCRIPT_DIR}/mods/generated_mods
-mkdir -p "${generated_mod_dir}"
-${blender_bin} --background --factory-startup -noaudio --python-exit-code 1 --python "${SCRIPT_DIR}/gen_modfile/gen_external_modules_modfile.py" -- -m addon_utils -o "${generated_mod_dir}/gen_modules_modfile"
-${blender_bin} --background --factory-startup -noaudio --python-exit-code 1 --python "${SCRIPT_DIR}/gen_modfile/gen_external_modules_modfile.py" -- -m keyingsets_builtins -a -o "${generated_mod_dir}/gen_startup_modfile"
-mkdir -p "${generated_mod_dir}/gen_bgl_modfile"
+
+# generate modfiles if gen_modfile.py is newer
+[ ! -d "${generated_mod_dir}" ] && mkdir -p "${generated_mod_dir}"
+if [[ "${generated_mod_dir}/gen_modules_modfile" -ot "${SCRIPT_DIR}/gen_modfile/gen_external_modules_modfile.py" ]]; then
+    ${blender_bin} --background --factory-startup -noaudio --python-exit-code 1 --python "${SCRIPT_DIR}/gen_modfile/gen_external_modules_modfile.py" -- -m addon_utils -o "${generated_mod_dir}/gen_modules_modfile" -f rst
+    touch "${generated_mod_dir}/gen_modules_modfile"
+fi
+if [[ "${generated_mod_dir}/gen_startup_modfile" -ot "${SCRIPT_DIR}/gen_modfile/gen_external_modules_modfile.py" ]]; then
+    ${blender_bin} --background --factory-startup -noaudio --python-exit-code 1 --python "${SCRIPT_DIR}/gen_modfile/gen_external_modules_modfile.py" -- -m keyingsets_builtins -a -o "${generated_mod_dir}/gen_startup_modfile" -f rst
+    touch "${generated_mod_dir}/gen_startup_modfile"
+fi
+
+# generate bgl modfile if gen_bgl_modfile.py and source is newer
 bgl_c_file="${source_dir}/source/blender/python/generic/bgl.c"
 if [ ! -e "${bgl_c_file}" ]; then
     bgl_c_file="${source_dir}/source/blender/python/generic/bgl.cc"
 fi
-${python_bin} "${SCRIPT_DIR}/gen_modfile/gen_bgl_modfile.py" -i "${bgl_c_file}" -o "${generated_mod_dir}/gen_bgl_modfile/bgl.json"
+if [[ "${generated_mod_dir}/gen_bgl_modfile/bgl.mod.rst" -ot "${SCRIPT_DIR}/gen_modfile/gen_bgl_modfile.py" || "${generated_mod_dir}/gen_bgl_modfile/bgl.mod.rst" -ot "${bgl_c_file}" ]]; then
+    mkdir -p "${generated_mod_dir}/gen_bgl_modfile"
+    ${python_bin} "${SCRIPT_DIR}/gen_modfile/gen_bgl_modfile.py" -i "${bgl_c_file}" -o "${generated_mod_dir}/gen_bgl_modfile/bgl.mod.rst" -f rst
+fi
+
+python_args=""
+if "${enable_python_profiler}"; then
+    python_args="-m profile -s cumtime -o ${SCRIPT_DIR}/../${PROFILER_RESULT_FILENAME}"
+fi
 
 echo "Generating fake bpy modules ..."
 if [ "${mod_version}" = "not-specified" ]; then
-    ${python_bin} "${SCRIPT_DIR}/gen.py" -i "${tmp_dir}/sphinx-in" -o "${output_dir}" -f "${format}" -T "${target}" -t "${target_version}" -l "${output_log_level}"
+    # shellcheck disable=SC2086
+    ${python_bin} ${python_args} "${SCRIPT_DIR}/gen.py" -i "${tmp_dir}/sphinx-in" -o "${output_dir}" -f "${format}" -T "${target}" -t "${target_version}" -l "${output_log_level}"
 else
-    ${python_bin} "${SCRIPT_DIR}/gen.py" -i "${tmp_dir}/sphinx-in" -o "${output_dir}" -f "${format}" -T "${target}" -t "${target_version}" -l "${output_log_level}" -m "${mod_version}"
+    # shellcheck disable=SC2086
+    ${python_bin} ${python_args} "${SCRIPT_DIR}/gen.py" -i "${tmp_dir}/sphinx-in" -o "${output_dir}" -f "${format}" -T "${target}" -t "${target_version}" -l "${output_log_level}" -m "${mod_version}"
 fi
 
 echo "Cleaning up ..."
 cd "${current_dir}"
-rm -rf "${tmp_dir}"
-rm -rf "${generated_mod_dir}"
+if [ "${env_temporary_dir}" == "not-specified" ]; then
+    rm -rf "${tmp_dir}"
+    rm -rf "${generated_mod_dir}"
+fi

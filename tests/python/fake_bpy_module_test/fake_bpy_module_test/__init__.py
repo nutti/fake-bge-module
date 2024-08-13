@@ -1,6 +1,15 @@
-from . import analyzer_test
-from . import dag_test
-from . import generator_test
-from . import info_test
-from . import refiner_test
-from . import utils_test
+from . import (
+    analyzer_test,
+    generator_test,
+    integration_test,
+    transformer_test,
+    utils_test,
+)
+
+__all__ = [
+    "analyzer_test",
+    "generator_test",
+    "integration_test",
+    "transformer_test",
+    "utils_test",
+]

@@ -1,0 +1,23 @@
+<document source="<string>">
+    <source-filename>
+        bpy_290_tweak.rst
+    <module>
+        <name>
+            bpy.types
+        <description>
+    <class>
+        <name>
+            ClassA
+        <description>
+            ClassA description
+        <base-class-list>
+        <attribute-list>
+            <attribute>
+                <name>
+                    attr_1
+                <description>
+                    attr_1 description
+                <data-type-list>
+                    <data-type>
+                        attr_1 type
+        <function-list>

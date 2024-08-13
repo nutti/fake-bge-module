@@ -4,33 +4,38 @@
 #
 # Description:
 #   gen_bgl_modfile.py generates python constant and function definitions
-#   which are defined by bgl.c.
-#   The definitions are output as a modfile format (JSON).
+#   which are defined by bgl.cc.
+#   The definitions are output as a modfile format.
 #
 # Note:
-#   You need to download blender source code for passing 'bgl.c' file to
+#   You need to download blender source code for passing 'bgl.cc' file to
 #   this script.
 #
 # Usage:
 #   python gen_bgl_modfile.py -i <bgl_c_file> -o <output_file>
+#     -f <output_format>
 #
 #     bgl_c_file:
-#       Path to bgl.c.
+#       Path to bgl.cc.
 #
 #     output_file:
 #       Generated definitions are output to specified file.
 #
+#     output_format:
+#       Output format. Supported formats are "rst" and "json".
+#
 ##############################################################################
 
 import argparse
-import re
-from typing import List, Dict
 import json
+import re
+from pathlib import Path
 
 
 class GenerationConfig:
     bgl_c_file = None
     output_file = None
+    output_format = "rst"
 
 
 def get_function_name(line: str) -> str:
@@ -59,7 +64,7 @@ def get_const_name(line: str) -> str:
     return None
 
 
-def get_function_info(line: str) -> Dict:
+def get_function_info(line: str) -> dict:
     regex = r"^BGL_Wrap\(([A-Za-z0-9]+),([A-Za-z]+),(\([A-Za-z0-9,]+\))\);$"
     pattern = re.compile(regex)
     match = re.match(pattern, line)
@@ -76,14 +81,13 @@ def get_function_info(line: str) -> Dict:
     return None
 
 
-def create_constant_def(const_name: str) -> Dict:
-    constant_def = {
+def create_constant_def(const_name: str) -> dict:
+    return {
         "name": const_name,
         "type": "constant",
         "module": "bgl",
         "data_type": "float",
     }
-    return constant_def
 
 
 def gltype_to_pytype(gltype: str) -> str:
@@ -121,7 +125,7 @@ def gltype_to_pytype(gltype: str) -> str:
 
 
 def create_function_def(
-        func_name: str, return_type: str, arg_types: List[str]) -> Dict:
+        func_name: str, return_type: str, arg_types: list[str]) -> dict:
     function_def = {
         "name": func_name,
         "type": "function",
@@ -144,9 +148,9 @@ def create_function_def(
     return function_def
 
 
-def analyze(config: 'GenerationConfig') -> Dict:
+def analyze(config: 'GenerationConfig') -> dict:
     func_info = {}
-    with open(config.bgl_c_file, "r", encoding="utf-8") as f:
+    with Path(config.bgl_c_file).open("r", encoding="utf-8") as f:
         data = f.read()
         regex = r"BGL_Wrap\([A-Za-z0-9]+,\s+[A-Za-z]+,\s+\([A-Za-z0-9, ]+\)\);"
         matched = re.findall(regex, data)
@@ -160,7 +164,7 @@ def analyze(config: 'GenerationConfig') -> Dict:
     # read and query function and constant list.
     func_lists = []
     const_lists = []
-    with open(config.bgl_c_file, "r", encoding="utf-8") as f:
+    with Path(config.bgl_c_file).open("r", encoding="utf-8") as f:
         line = f.readline()
         while line:
             func_name = get_function_name(line)
@@ -186,31 +190,68 @@ def analyze(config: 'GenerationConfig') -> Dict:
 def parse_options() -> 'GenerationConfig':
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-i", dest="bgl_c_file", type=str, help="Path to bgl.c",
+        "-i", dest="bgl_c_file", type=str, help="Path to bgl.cc",
         required=True
     )
     parser.add_argument(
         "-o", dest="output_file", type=str, help="Output directory",
         required=True
     )
+    parser.add_argument("-f", dest="output_format", type=str,
+                        help="Output format (rst, json).", required=True)
     args = parser.parse_args()
 
     config = GenerationConfig()
     config.bgl_c_file = args.bgl_c_file
     config.output_file = args.output_file
+    config.output_format = args.output_format
+
+    if config.output_format not in ["rst", "json"]:
+        raise ValueError(f"Unsupported output format: {config.output_format}")
 
     return config
 
 
-def write_to_modfile(info: Dict, config: 'GenerationConfig'):
-    with open(config.output_file, "w", encoding="utf-8") as f:
-        json.dump(info, f, indent=4, sort_keys=True, separators=(",", ": "))
+def write_to_rst_modfile(data: dict, config: 'GenerationConfig') -> None:
+    with Path(config.output_file).open("w", encoding="utf-8") as f:
+        f.write(".. mod-type:: new\n\n")
+        f.write(".. module:: bgl\n\n")
+        for info in data["new"]:
+            if info["type"] == "function":
+                func_info = info
+                f.write(f".. function:: {func_info['name']}"
+                        f"({', '.join(func_info['parameters'])})\n\n")
+                for param_info in func_info["parameter_details"]:
+                    f.write(f"   :type {param_info['name']}: "
+                            f"{param_info['data_type']}\n")
+                if func_info["return"]["data_type"] == "":
+                    f.write("\n")
+                else:
+                    f.write(f"   :rtype: "
+                            f"{func_info['return']['data_type']}\n\n")
+            elif info["type"] == "constant":
+                constant_info = info
+                f.write(f".. data:: {constant_info['name']}\n\n")
+                if "data_type" in constant_info:
+                    f.write(f"   :type: {constant_info['data_type']}\n\n")
 
 
-def main():
+def write_to_json_modfile(data: dict, config: 'GenerationConfig') -> None:
+    with Path(config.output_file).open("w", encoding="utf-8") as f:
+        json.dump(data, f, indent=4, sort_keys=True, separators=(",", ": "))
+
+
+def write_to_modfile(data: dict, config: 'GenerationConfig') -> None:
+    if config.output_format == "rst":
+        write_to_rst_modfile(data, config)
+    elif config.output_format == "json":
+        write_to_json_modfile(data, config)
+
+
+def main() -> None:
     config = parse_options()
 
-    # Analyze bgl.c.
+    # Analyze bgl.cc.
     results = analyze(config)
 
     # Write definitions to file.

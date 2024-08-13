@@ -1,0 +1,24 @@
+<document source="<string>">
+    <source-filename>
+        remove_trivial_nodes.rst
+    <module>
+        <name>
+            module_1
+        <description>
+    <data>
+        <name>
+            DATA_1
+        <description>
+            DATA_1 description
+        <data-type-list>
+            <data-type>
+                DATA_1 type
+    <code-document>
+        <paragraph>
+            Some descriptions 1
+        <paragraph>
+            Some descriptions 2
+        <paragraph>
+            Some descriptions 3
+        <paragraph>
+            Some descriptions 4

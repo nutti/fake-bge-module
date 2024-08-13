@@ -1,0 +1,58 @@
+<document source="<string>">
+    <source-filename>
+        single_function.rst
+    <module>
+        <name>
+            module_1
+        <description>
+    <function function_type="function">
+        <name>
+            function_1
+        <description>
+            function_1 description
+        <argument-list>
+            <argument argument_type="arg">
+                <name>
+                    arg_1
+                <description>
+                    function_1 arg_1 description
+                <default-value>
+                <data-type-list>
+                    <data-type>
+                        function_1 arg_1 type
+            <argument argument_type="arg">
+                <name>
+                    arg_2
+                <description>
+                    function_1 arg_2 description
+                <default-value>
+                    "test"
+                <data-type-list>
+                    <data-type>
+                        function_1 arg_2 type
+            <argument argument_type="arg">
+                <name>
+                    arg_3
+                <description>
+                    function_1 arg_3 description
+                <default-value>
+                    1234
+                <data-type-list>
+                    <data-type>
+                        function_1 arg_3 type
+            <argument argument_type="arg">
+                <name>
+                    arg_4
+                <description>
+                    function_1 arg_4 description
+                <default-value>
+                    sys.float_info.max
+                <data-type-list>
+                    <data-type>
+                        function_1 arg_4 type
+        <return>
+            <description>
+                function_1 return description
+            <data-type-list>
+                <data-type>
+                    function_1 return type

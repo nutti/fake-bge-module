@@ -1,5 +1,7 @@
 # Setup IDE: PyCharm
 
+![Code Completion (PyCharm)](images/code_completion_pycharm.png)
+
 *Note: For PyCharm users, change the value `idea.max.intellisense.filesize` in
 `idea.properties` file to more than 2600 because some modules have the issue of
 being too big for intelliSense to work.*
@@ -15,8 +17,8 @@ Launch PyCharm and do all below procedures.
 <!-- markdownlint-disable MD007 MD029 MD032 MD033 -->
 
 1. Show *Settings* (Windows) or *Preferences* (macOS) window.
-  * (Windows) Click *File* > *Settings*
-  * (macOS) Click *Pycharm Menu* > *Preferences*
+   * (Windows) Click *File* > *Settings*
+   * (macOS) Click *Pycharm Menu* > *Preferences*
 2. Select *Project: <Your Project>* > *Project Interpreter*.
 3. Click *Gear* icon on the right next to *Project Interpreter:*, and a popup
    menu is shown.
@@ -34,3 +36,4 @@ Launch PyCharm and do all below procedures.
 ## More information
 
 * [Stack Overflow: PyCharm import external library](https://stackoverflow.com/questions/24197970/pycharm-import-external-library)
+* [Blender – Interplanety: Using external IDE PyCharm for writing Blender scripts](https://b3d.interplanety.org/en/using-external-ide-pycharm-for-writing-blender-scripts/)

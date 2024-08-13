@@ -1,15 +1,15 @@
-import os
-import sys
 import argparse
+import sys
 import unittest
+from pathlib import Path
 
 
 class FakeBpyModuleTestConfig:
-    def __init__(self):
+    def __init__(self) -> None:
         self.modules_path = ""
 
 
-def parse_options(config: FakeBpyModuleTestConfig):
+def parse_options(config: FakeBpyModuleTestConfig) -> None:
     usage = f"Usage: python {__file__} [-p <modules_path>]"
     parser = argparse.ArgumentParser(usage)
     parser.add_argument(
@@ -20,48 +20,49 @@ def parse_options(config: FakeBpyModuleTestConfig):
         config.modules_path = args.modules_path
 
 
-def main():
+def main() -> None:
     config = FakeBpyModuleTestConfig()
     parse_options(config)
 
-    path = os.path.abspath(config.modules_path)
-    sys.path.append(path)
+    path = Path(config.modules_path).resolve()
+    sys.path.append(str(path))
 
-    sys.path.append(os.path.dirname(__file__))
-    import fake_bpy_module_test     # pylint: disable=C0415
+    sys.path.append(str(Path(__file__).parent))
+    import fake_bpy_module_test     # pylint: disable=C0415  # noqa: I001
 
     test_cases = [
         fake_bpy_module_test.analyzer_test.BaseAnalyzerTest,
-        fake_bpy_module_test.analyzer_test.AnalyzerWithModFileTest,
-        fake_bpy_module_test.analyzer_test.BpyModuleAnalyzerTest,
-        fake_bpy_module_test.dag_test.DAGTest,
+
         fake_bpy_module_test.generator_test.CodeWriterIndentTest,
         fake_bpy_module_test.generator_test.CodeWriterTest,
-        fake_bpy_module_test.generator_test.BaseGeneratorTest,
-        fake_bpy_module_test.generator_test.DependencyTest,
-        fake_bpy_module_test.generator_test.GenerationInfoByTargetTest,
-        fake_bpy_module_test.generator_test.GenerationInfoByRuleTest,
-        fake_bpy_module_test.generator_test.PackageGeneratorConfigTest,
-        fake_bpy_module_test.generator_test.PackageGenerationRuleTest,
-        fake_bpy_module_test.generator_test.PackageAnalyzerTest,
-        fake_bpy_module_test.generator_test.PackageGeneratorTest,
-        fake_bpy_module_test.info_test.DataTypeTest,
-        fake_bpy_module_test.info_test.UnknownDataTypeTest,
-        fake_bpy_module_test.info_test.IntermidiateDataTypeTest,
-        fake_bpy_module_test.info_test.BuiltinDataTypeTest,
-        fake_bpy_module_test.info_test.ModifierDataTypeTest,
-        fake_bpy_module_test.info_test.CustomDataTypeTest,
-        fake_bpy_module_test.info_test.MixinDataTypeTest,
-        fake_bpy_module_test.info_test.InfoTest,
-        fake_bpy_module_test.info_test.ParameterDetailTest,
-        fake_bpy_module_test.info_test.ReturnInfoTest,
-        fake_bpy_module_test.info_test.VariableInfoTest,
-        fake_bpy_module_test.info_test.FunctionInfoTest,
-        fake_bpy_module_test.info_test.ClassInfoTest,
-        fake_bpy_module_test.info_test.SectionInfoTest,
-        fake_bpy_module_test.refiner_test.ModuleStructureTest,
-        fake_bpy_module_test.refiner_test.EntryPointTest,
-        fake_bpy_module_test.refiner_test.DataTypeRefinerTest,
+        fake_bpy_module_test.generator_test.SortedEntryPointNodesTest,
+        fake_bpy_module_test.generator_test.PyCodeWriterTest,
+        fake_bpy_module_test.generator_test.PyInterfaceWriterTest,
+        fake_bpy_module_test.generator_test.JsonWriterTest,
+        fake_bpy_module_test.generator_test.CodeDocumentNodeTranslatorTest,
+
+        fake_bpy_module_test.transformer_test.BaseClassFixtureTest,
+        fake_bpy_module_test.transformer_test.BpyContextVariableConverterTest,
+        fake_bpy_module_test.transformer_test.BpyModuleTweakerTest,
+        fake_bpy_module_test.transformer_test.CannonicalDataTypeRewriterTest,
+        fake_bpy_module_test.transformer_test.CodeDocumentRefinerTest,
+        fake_bpy_module_test.transformer_test.DataTypeRefinerTest,
+        fake_bpy_module_test.transformer_test.DefaultValueFillerTest,
+        fake_bpy_module_test.transformer_test.DependencyBuilderTest,
+        fake_bpy_module_test.transformer_test.DuplicationRemoverTest,
+        fake_bpy_module_test.transformer_test.ModApplierTest,
+        fake_bpy_module_test.transformer_test.ModuleLevelAttributeFixtureTest,
+        fake_bpy_module_test.transformer_test.ModuleNameFixtureTest,
+        fake_bpy_module_test.transformer_test.RstSpecificNodeCleanerTest,
+        fake_bpy_module_test.transformer_test.SameModuleMergerTest,
+        fake_bpy_module_test.transformer_test.SelfRewriterTest,
+        fake_bpy_module_test.transformer_test.TargetFileCombinerTest,
+        fake_bpy_module_test.transformer_test.FirstTitleRemoverTest,
+        fake_bpy_module_test.transformer_test.FormatValidatorTest,
+        fake_bpy_module_test.transformer_test.UtilsTest,
+
+        fake_bpy_module_test.integration_test.IntegrationTest,
+
         fake_bpy_module_test.utils_test.UtilsTest,
     ]
 
