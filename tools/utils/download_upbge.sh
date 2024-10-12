@@ -22,7 +22,7 @@ declare -A NEED_MOVE_LINUX=(
 )
 
 declare -A UPBGE_CHECKSUM_URL=(
-    ["v0.2.5"]="https://raw.githubusercontent.com/nutti/fake-bge-module/main/tools/utils/md5sum/0.2.5.md5"
+    ["v0.2.5"]="https://raw.githubusercontent.com/nutti/fake-bge-module/main/tools/utils/md5sum/upbge/0.2.5.md5"
     ["v0.30"]="https://github.com/UPBGE/upbge/releases/download/v0.30/UPBGE-0.30-Release.md5"
     ["v0.36"]="https://github.com/UPBGE/upbge/releases/download/v0.36.1/upbge-0.36.1-Release.md5"
 )

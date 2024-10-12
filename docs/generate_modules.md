@@ -22,6 +22,16 @@ The generating script uses the packages listed on
 [requirements.txt](../src/requirements.txt).  
 Execute below command to install requirement packages.
 
+For fake-bpy-module:
+
+```bash
+git clone https://github.com/nutti/fake-bpy-module.git
+cd fake-bpy-module
+pip install -r src/requirements.txt
+```
+
+For fake-bge-module:
+
 ```bash
 git clone https://github.com/nutti/fake-bge-module.git
 cd fake-bge-module
@@ -38,47 +48,70 @@ After generating modules, you need to setup IDE to enable a code completion.
 
 ## Case 1: Use utility script
 
-### 1. Download UPBGE binary
+### 1. Download Blender/UPBGE binary
 
-Download UPBGE binary from [UPBGE official site](https://upbge.org/).
-Download UPBGE whose version is the version you try to generate modules.
+From below sites, download Blender or UPBGE binary whose version is the
+version you try to generate modules.
 
-### 2. Download UPBGE sources
+* Blender: [https://download.blender.org/release/](https://download.blender.org/release/)
+* UPBGE: [https://upbge.org/](https://upbge.org/)
+
+### 2. Download Blender/UPBGE sources
+
+For fake-bpy-module:
+
+```bash
+git clone https://projects.blender.org/blender/blender.git
+```
+
+For fake-bge-module:
 
 ```bash
 git clone https://github.com/UPBGE/upbge.git
 ```
 
-### 3. Download fake-bge-module sources
+### 3. Download fake-bpy-module/fake-bge-module sources
 
-Download the fake-bge-module sources from GitHub.
+Download the fake-bpy-module/fake-bge-module sources from GitHub.  
+Use Git to clone repository.
 
-Use Git and clone fake-bge-module repository.
+For fake-bpy-module:
 
 ```bash
-git clone https://github.com/nutti/fake-bge-module.git
+export TARGET=bpy
+```
+
+For fake-bge-module:
+
+```bash
+export TARGET=bge
+```
+
+```bash
+git clone https://github.com/nutti/fake-${TARGET}-module.git
 ```
 
 Or, you can download .zip file from GitHub.
 
-[https://github.com/nutti/fake-bge-module/archive/main.zip](https://github.com/nutti/fake-bge-module/archive/main.zip)
+* fake-bpy-module: [https://github.com/nutti/fake-bpy-module/archive/main.zip](https://github.com/nutti/fake-bpy-module/archive/main.zip)
+* fake-bge-module: [https://github.com/nutti/fake-bge-module/archive/main.zip](https://github.com/nutti/fake-bge-module/archive/main.zip)
 
 ### 4. Run script
 
 <!-- markdownlint-disable MD013 -->
 ```bash
-cd fake-bge-module/src
-bash gen_module.sh <source-dir> <upbge-dir> <target> <branch/tag/commit> <target-version> <output-dir> [<mod-version>]
+cd fake-${TARGET}-module/src
+bash gen_module.sh <source-dir> <blender-dir> <target> <branch/tag/commit> <target-version> <output-dir> [<mod-version>]
 ```
 <!-- markdownlint-enable MD013 -->
 
-* `<source-dir>`: Specify UPBGE sources directory.
-* `<upbge-dir>`: Specify UPBGE binary directory.
+* `<source-dir>`: Specify Blender/UPBGE sources directory.
+* `<blender-dir>`: Specify Blender/UPBGE binary directory.
 * `<target>`: `blender` or `upbge`.
-* `<branch/tag/commit>`: Specify target UPBGE source's branch for the
+* `<branch/tag/commit>`: Specify target Blender/UPBGE source's branch for the
   generating modules.
   * If you want to generate modules for 2.79, specify `v2.79`
-  * If you want to generate modules for newest UPBGE version, specify `main`
+  * If you want to generate modules for newest Blender/UPBGE version, specify `main`
 * `<target-version>`: Specify target version.
 * `<output-dir>`: Specify directory where generated modules are output.
 * `<mod-version>`: Modify APIs by using patch files located in `mods` directory.
@@ -93,32 +126,54 @@ environment variable.
 
 <!-- markdownlint-disable MD013 -->
 ```bash
-PYTHON_BIN=/path/to/python3.12 bash gen_module.sh <source-dir> <upbge-dir> <target> <branch/tag/commit> <target-version> <output-dir> [<mod-version>]
+PYTHON_BIN=/path/to/python3.12 bash gen_module.sh <source-dir> <blender-dir> <target> <branch/tag/commit> <target-version> <output-dir> [<mod-version>]
 ```
 <!-- markdownlint-enable MD013 -->
 
 ## Case 2: Do it yourself all procedures
 
-### 1. Download UPBGE binary
+### 1. Download Blender/UPBGE binary
 
-Download UPBGE binary from
-[UPBGE official site](https://upbge.org/).  
-Download UPBGE whose version is the version you try to generate modules.  
-Place UPBGE binary to some directory.  
-In this tutorial, UPBGE binary assumes to be placed on
-`/workspace/upbge-bin`. (i.e. UPBGE executable is located on
-`/workspace/upbge-bin/blender`)
+From below sites, download Blender or UPBGE binary whose version is the
+version you try to generate modules.
+
+* Blender: [https://download.blender.org/release/](https://download.blender.org/release/)
+* UPBGE: [https://upbge.org/](https://upbge.org/)
+
+Place Blender/UPBGE binary to some directory.  
+In this tutorial, Blender/UPBGE binary assumes to be placed on
+`/workspace/blender-bin`. (i.e. Blender executable is located on
+`/workspace/blender-bin/blender`)
 
 ```bash
 export WORKSPACE=/workspace
-export UPBGE_BIN=${WORKSPACE}/upbge-bin
-export UPBGE_SRC=${WORKSPACE}/upbge
+export BLENDER_BIN=${WORKSPACE}/blender-bin
+export BLENDER_SRC=${WORKSPACE}/blender
 ```
 
-### 2. Download UPBGE sources
+For fake-bpy-module:
 
 ```bash
-cd ${WORKSPACE}
+export TARGET=bpy
+```
+
+For fake-bge-module:
+
+```bash
+export TARGET=bge
+```
+
+### 2. Download Blender/UPBGE sources
+
+For fake-bpy-module:
+
+```bash
+git clone https://projects.blender.org/blender/blender.git
+```
+
+For fake-bge-module:
+
+```bash
 git clone https://github.com/UPBGE/upbge.git
 ```
 
@@ -128,47 +183,47 @@ Be sure to match the version between sources and binary.
 If you try to generate modules for v2.79, you should use `git checkout v2.79`.
 
 ```bash
-cd ${UPBGE_SRC}
+cd ${BLENDER_SRC}
 git checkout [branch/tag/commit]
 ```
 
 ### 4. Generate .rst documents
 
-Generated .rst documents are located on `${UPBGE_SRC}/doc/python_api/sphinx-in`.
+Generated .rst documents are located on `${BLENDER_SRC}/doc/python_api/sphinx-in`.
 
 <!-- markdownlint-disable MD013 -->
 ```bash
-${UPBGE_BIN}/blender --background --factory-startup -noaudio --python-exit-code 1 --python doc/python_api/sphinx_doc_gen.py
+${BLENDER_BIN}/blender --background --factory-startup -noaudio --python-exit-code 1 --python doc/python_api/sphinx_doc_gen.py
 ```
 <!-- markdownlint-enable MD013 -->
 
-### 5. Download fake-bge-module sources
+### 5. Download fake-bpy-module sources
 
-Download the fake-bge-module sources from GitHub.
-
-Use Git and clone fake-bge-module repository.
+Download the fake-bpy-module sources from GitHub.  
+Use Git to clone repository.
 
 ```bash
 cd ${WORKSPACE}
-git clone https://github.com/nutti/fake-bge-module.git
+git clone https://github.com/nutti/fake-${TARGET}-module.git
 ```
 
 Or, you can download .zip file from GitHub.
 
-[https://github.com/nutti/fake-bge-module/archive/main.zip](https://github.com/nutti/fake-bge-module/archive/main.zip)
+* fake-bpy-module: [https://github.com/nutti/fake-bpy-module/archive/main.zip](https://github.com/nutti/fake-bpy-module/archive/main.zip)
+* fake-bge-module: [https://github.com/nutti/fake-bge-module/archive/main.zip](https://github.com/nutti/fake-bge-module/archive/main.zip)
 
 ### 6. Generate mod files
 
 <!-- markdownlint-disable MD013 -->
 ```bash
-cd fake-bge-module/src
+cd fake-${TARGET}-module/src
 
 mkdir -p mods/generated_mods
-${UPBGE_BIN}/blender --background --factory-startup -noaudio --python-exit-code 1 --python gen_modfile/gen_external_modules_modfile.py -- -m addon_utils -o mods/generated_mods/gen_modules_modfile -f json
-${UPBGE_BIN}/blender --background --factory-startup -noaudio --python-exit-code 1 --python gen_modfile/gen_external_modules_modfile.py -- -m keyingsets_builtins -a -o mods/generated_mods/gen_startup_modfile -f json
+${BLENDER_BIN}/blender --background --factory-startup -noaudio --python-exit-code 1 --python gen_modfile/gen_external_modules_modfile.py -- -m addon_utils -o mods/generated_mods/gen_modules_modfile -f json
+${BLENDER_BIN}/blender --background --factory-startup -noaudio --python-exit-code 1 --python gen_modfile/gen_external_modules_modfile.py -- -m keyingsets_builtins -a -o mods/generated_mods/gen_startup_modfile -f json
 
 mkdir -p mods/generated_mods/gen_bgl_modfile
-python gen_modfile/gen_bgl_modfile.py -i ${UPBGE_SRC}/source/blender/python/generic/bgl.cc -o mods/generated_mods/gen_bgl_modfile/bgl.json -f json
+python gen_modfile/gen_bgl_modfile.py -i ${BLENDER_SRC}/source/blender/python/generic/bgl.cc -o mods/generated_mods/gen_bgl_modfile/bgl.json -f json
 ```
 <!-- markdownlint-enable MD013 -->
 
@@ -182,7 +237,7 @@ python gen.py -i <input-dir> -o <output-dir> -f <format> -T <target> -t <target-
 
 * `-i <input-dir>`: Specify input directory (The directory where .rst files are
   located in process 4). In this document, `<input-dir>` should be
-  `${UPBGE_SRC}/doc/python_api/sphinx-in`.
+  `${BLENDER_SRC}/doc/python_api/sphinx-in`.
 * `-o <output-dir>`: Specify output directory. (The directory where generated
   files will be located)
 * `-f <format>`: Format the generated code by `<format>` convention.
@@ -202,22 +257,22 @@ python gen.py -i <input-dir> -o <output-dir> -f <format> -T <target> -t <target-
 
 <!-- markdownlint-disable MD013 -->
 ```bash
-bash tools/gen_module/run_gen_module_in_docker.sh <upbge-version>
+bash tools/gen_module/run_gen_module_in_docker.sh <blender-version>
 ```
 <!-- markdownlint-enable MD013 -->
 
-* `<upbge-version>`: Specify upbge version.
+* `<blender-version>`: Specify Blender/UPBGE version.
 
-`<mod-version>` is automatically determined by `<upbge-version>` version.
+`<mod-version>` is automatically determined by `<blender-version>` version.
 
 ### Results
 
 | Directory | Contents |
 |----|----|
-| `build/upbge-bin` | UPBGE binaries |
-| `build/upbge-src` | UPBGE source code |
-| `build/examples` | UPBGE Python API sample code |
+| `build/blender-bin` | Blender/UPBGE binaries |
+| `build/blender-src` | Blender/UPBGE source code |
+| `build/examples` | Blender/UPBGE Python API sample code |
 | `build/results` | Result `*.pyi` files |
-| `build/sphinx-in` | UPBGE Python API documents |
+| `build/sphinx-in` | Blender/UPBGE Python API documents |
 | `build/sphinx-in-tmp` | ??? |
-| `downloads` | UPBGE archives |
+| `downloads` | Blender/UPBGE archives |
