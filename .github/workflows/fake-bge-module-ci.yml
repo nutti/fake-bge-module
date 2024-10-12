@@ -53,7 +53,8 @@ jobs:
       matrix:
         upbge_version:
           [
-            "0.2.5"
+            "0.2.5",
+            "0.30", "0.36"
           ]
     steps:
       - name: Checkout repo
@@ -83,7 +84,7 @@ jobs:
       - name: Install UPBGE binary dependencies
         run: |
           sudo apt update
-          sudo apt install --no-install-recommends -y libglu1-mesa libegl1 libxxf86vm1 libxfixes3 libxi6 libxkbcommon0 libgl1 libjack0 libopenimageio-dev
+          sudo apt install --no-install-recommends -y libglu1-mesa libegl1 libxxf86vm1 libxfixes3 libxi6 libxkbcommon0 libgl1 libjack0 libopenimageio-dev libpulse-dev
 
       - name: Install fake-bge-module tools
         run: sudo apt install --no-install-recommends -y pandoc
@@ -165,7 +166,8 @@ jobs:
       matrix:
         upbge_version:
           [
-            "0.2.5"
+            "0.2.5",
+            "0.30", "0.36"
           ]
     steps:
       - name: Fetch artifacts
@@ -191,7 +193,8 @@ jobs:
       matrix:
         upbge_version:
           [
-            "0.2.5"
+            "0.2.5",
+            "0.30", "0.36"
           ]
     steps:
       - name: Fetch Artifacts
@@ -215,7 +218,8 @@ jobs:
       matrix:
         upbge_version:
           [
-            "0.2.5"
+            "0.2.5",
+            "0.30", "0.36"
           ]
     steps:
       - name: Fetch Artifacts
