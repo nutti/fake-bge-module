@@ -143,14 +143,18 @@
         <description>
         <data-type-list>
             <data-type option="never none">
-                set[typing.Literal['ONE', 'TWO']]
+                set[
+                <enum-ref>
+                    bpy.typing.Example
+                ]
     <data>
         <name>
             data_enum_in_rna
         <description>
         <data-type-list>
             <data-type option="never none">
-                typing.Literal['ONE', 'TWO']
+                <enum-ref>
+                    bpy.typing.Example
     <data>
         <name>
             data_enumerated_constant
@@ -497,6 +501,27 @@
                 [
                 <class-ref>
                     refined_module_a.RefinedClassA
+                ]
+    <data>
+        <name>
+            data_bmlayercollection_of_value
+        <description>
+        <data-type-list>
+            <data-type option="never none">
+                <class-ref>
+                    bmesh.types.BMLayerCollection
+                [float]
+    <data>
+        <name>
+            data_bmlayercollection_of_class
+        <description>
+        <data-type-list>
+            <data-type option="never none">
+                <class-ref>
+                    bmesh.types.BMLayerCollection
+                [
+                <class-ref>
+                    module_1.ClassA
                 ]
     <data>
         <name>

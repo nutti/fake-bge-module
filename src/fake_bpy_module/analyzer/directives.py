@@ -26,6 +26,9 @@ from .nodes import (
     DataTypeNode,
     DefaultValueNode,
     DescriptionNode,
+    EnumItemListNode,
+    EnumItemNode,
+    EnumNode,
     FunctionListNode,
     FunctionNode,
     FunctionReturnNode,
@@ -342,6 +345,15 @@ class ClassDirective(rst.Directive):
             elif isinstance(child, FunctionNode):
                 method_list_node.append_child(child)
 
+        # Get all field values.
+        field_lists: nodes.field_list = paragraph_node.findall(nodes.field_list)
+        for field_list in field_lists:
+            for field in field_list:
+                fname_node, fbody_node = field.children
+                if fname_node.astext() == "generic-types":
+                    class_node.attributes[fname_node.astext()] = \
+                        fbody_node.astext()
+
         return [class_node]
 
 
@@ -408,7 +420,7 @@ class FunctionDirective(rst.Directive):
     _FUNC_DEF_REGEX = re.compile(r"([a-zA-Z0-9_]+)\s*\((.*)\)")
     _ARG_FIELD_REGEX = re.compile(r"(arg|param|type)\s+([0-9a-zA-Z_]+)")
     _RETURN_FIELD_REGEX = re.compile(r"(return|rtype)")
-    _OPTION_MODOPTION_FIELD_REFEX = re.compile(
+    _OPTION_MODOPTION_FIELD_REGEX = re.compile(
         r"(mod-option|option)\s+(arg|rtype|function)\s*(\S*)")
 
     def _parse_arg_detail(self, arg_list_node: ArgumentListNode,
@@ -448,8 +460,11 @@ class FunctionDirective(rst.Directive):
                 arg_node = n.parent
                 break
         if arg_node:
-            for dtype_node in arg_node.findall(DataTypeNode):
-                dtype_node.attributes[option_type] = option_body.astext()
+            if option_body.astext() == "update-argument-type":
+                arg_node.attributes[option_type] = option_body.astext()
+            else:
+                for dtype_node in arg_node.findall(DataTypeNode):
+                    dtype_node.attributes[option_type] = option_body.astext()
 
     def _parse_return_option(self, return_node: FunctionReturnNode,
                              option_type: str,
@@ -471,7 +486,7 @@ class FunctionDirective(rst.Directive):
                     func_ret_node = func_node.element(FunctionReturnNode)
                     self._parse_return_detail(func_ret_node, m.group(1),
                                               fbody_node)
-                elif m := self._OPTION_MODOPTION_FIELD_REFEX.match(
+                elif m := self._OPTION_MODOPTION_FIELD_REGEX.match(
                         fname_node.astext()):
                     if m.group(2) == "arg":
                         arg_list_node = func_node.element(ArgumentListNode)
@@ -483,6 +498,9 @@ class FunctionDirective(rst.Directive):
                                                   fbody_node)
                     elif m.group(2) == "function":
                         func_node.attributes[m.group(1)] = fbody_node.astext()
+                elif fname_node.astext() == "generic-types":
+                    func_node.attributes[fname_node.astext()] = \
+                        fbody_node.astext()
 
     def run(self) -> list[FunctionNode]:
         paragraph: nodes.paragraph = nodes.paragraph()
@@ -536,6 +554,43 @@ class FunctionDirective(rst.Directive):
             self._parse_signature_detail(func_node, paragraph)
 
         return func_nodes
+
+
+# This directive is only used for test.
+class EnumDirective(rst.Directive):
+    required_arguments = 1
+    final_argument_whitespace = True
+    has_content = True
+
+    def run(self) -> list[DataNode]:
+        paragraph: nodes.paragraph = nodes.paragraph()
+        self.state.nested_parse(self.content, self.content_offset, paragraph)
+
+        node = EnumNode.create_template()
+
+        # Parse enum name.
+        enum_name = self.arguments[0]
+        node.element(NameNode).add_text(enum_name)
+
+        # Get all descriptions.
+        desc_str = ""
+        for child in paragraph.children:
+            if isinstance(child, nodes.paragraph):
+                desc_str += child.astext()
+        node.element(DescriptionNode).add_text(desc_str)
+
+        # Get all field values.
+        enum_item_list_node = node.element(EnumItemListNode)
+        field_lists: nodes.field_list = paragraph.findall(nodes.field_list)
+        for field_list in field_lists:
+            for field in field_list:
+                fname_node, fbody_node = field.children
+                enum_item_node = EnumItemNode.create_template()
+                enum_item_node.element(NameNode).add_text(fname_node.astext())
+                enum_item_node.element(DescriptionNode).add_text(fbody_node.astext())
+                append_child(enum_item_list_node, enum_item_node)
+
+        return [node]
 
 
 class DocumentDirective(rst.Directive):
@@ -634,6 +689,7 @@ def register_directives() -> None:
     rst.directives.register_directive("property", AttributeDirective)
     rst.directives.register_directive("data", DataDirective)
     rst.directives.register_directive("DATA", DataDirective)
+    rst.directives.register_directive("enum", EnumDirective)
 
     rst.directives.register_directive(
         "literalinclude", LiteralIncludeDirective)

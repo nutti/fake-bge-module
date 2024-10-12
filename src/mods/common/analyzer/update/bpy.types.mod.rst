@@ -10,19 +10,27 @@
 
 .. class:: bpy_prop_collection
 
+   :generic-types: _GenericType1
+
    .. method:: values()
 
-      :rtype: list[GenericType1]
+      :rtype: list[_GenericType1 | None]
       :mod-option rtype: skip-refine
+
+   .. method:: find(key)
+
+      :type key: str (never None)
 
    .. method:: get(key, default=None)
 
-      :type default: GenericType2
+      :type key: str (never None)
+      :type default: _GenericType2
       :mod-option arg default: skip-refine
+      :generic-types: _GenericType2
 
    .. method:: items()
 
-      :rtype: list[tuple[str, GenericType1]]
+      :rtype: list[tuple[str, _GenericType1]]
       :mod-option rtype: skip-refine
 
    .. method:: foreach_get(attr, seq)
@@ -43,10 +51,11 @@
 
    .. method:: id_eval_get(id)
 
-      :type id: GenericType1 | None
+      :type id: _GenericType1 | None
       :mod-option arg id: skip-refine
-      :rtype: GenericType1
+      :rtype: _GenericType1
       :mod-option rtype: skip-refine
+      :generic-types: _GenericType1
 
 .. class:: FreestyleLineStyle
 
@@ -143,3 +152,10 @@
    .. attribute:: node_tree
 
       :type: :class:`bpy.types.TextureNodeTree`
+
+.. class:: IDMaterials
+
+   .. method:: pop(*, index=-1)
+
+      :type index: int (never None) 
+      :mod-option arg index: update-argument-type

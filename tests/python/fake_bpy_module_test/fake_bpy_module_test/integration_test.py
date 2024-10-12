@@ -87,6 +87,7 @@ class IntegrationTest(common.FakeBpyModuleTestBase):
             f"{self.data_dir}/input/multiple/module_1.rst",
             f"{self.data_dir}/input/multiple/module_1.submodule_1.rst",
             f"{self.data_dir}/input/multiple/module_2.rst",
+            f"{self.data_dir}/input/multiple/rna_enum_enum1.rst",
         ]
 
         ext_patterns = ["py", "pyi"]
@@ -121,7 +122,7 @@ class IntegrationTest(common.FakeBpyModuleTestBase):
 
             self.assertFalse(self.__is_py_typed_exist(f"{self.output_dir}/py.typed"))
 
-    def test_eceptional(self) -> None:
+    def test_exceptional(self) -> None:
         rst_files = [
             f"{self.data_dir}/input/exceptional/module_exceptional.rst",
         ]

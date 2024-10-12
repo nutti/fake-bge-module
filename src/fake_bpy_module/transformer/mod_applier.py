@@ -1,5 +1,6 @@
+import copy
 from pathlib import Path
-from typing import Self
+from typing import Any, Self
 
 from docutils import nodes
 from docutils.core import publish_doctree
@@ -23,11 +24,24 @@ from fake_bpy_module.analyzer.nodes import (
     ModTypeNode,
     ModuleNode,
     NameNode,
+    NodeBase,
 )
 from fake_bpy_module.utils import append_child, find_children, get_first_child
 
 from .base_class_fixture import BaseClassFixture
 from .transformer_base import TransformerBase
+
+
+def get_merged_node_attributes(
+        node_1: NodeBase, node_2: NodeBase) -> dict[str, Any]:
+    attrs_1 = node_1.attributes
+    attrs_2 = node_2.attributes
+
+    attrs_merged = copy.deepcopy(attrs_1)
+    for key, value in attrs_2.items():
+        if key not in attrs_merged:
+            attrs_merged[key] = value
+    return attrs_merged
 
 
 class ModApplier(TransformerBase):
@@ -70,6 +84,14 @@ class ModApplier(TransformerBase):
                 arg_name = arg_node.element(NameNode).astext()
 
                 if arg_name == mod_arg_name:
+                    mod_options = []
+                    node_attrs = mod_arg_node.attributes
+                    if "mod-option" in node_attrs:
+                        mod_options = node_attrs["mod-option"].split(",")
+                    if "update-argument-type" in mod_options:
+                        arg_node.attributes["argument_type"] = \
+                            node_attrs["argument_type"]
+
                     mod_desc_node = mod_arg_node.element(DescriptionNode)
                     if not mod_desc_node.empty():
                         arg_node.replace_node(mod_desc_node)
@@ -110,6 +132,9 @@ class ModApplier(TransformerBase):
                 if func_name_node.astext() != mod_func_name_node.astext():
                     continue
 
+                attrs = get_merged_node_attributes(func_node, mod_func_node)
+                func_node.attributes = attrs
+
                 # Update description.
                 mod_desc_node = mod_func_node.element(DescriptionNode)
                 if not mod_desc_node.empty():
@@ -137,6 +162,9 @@ class ModApplier(TransformerBase):
                 class_name = class_name_node.astext()
                 if class_name != mod_class_name:
                     continue
+
+                attrs = get_merged_node_attributes(class_node, mod_class_node)
+                class_node.attributes = attrs
 
                 # Update description.
                 mod_desc_node = mod_class_node.element(DescriptionNode)
@@ -187,6 +215,8 @@ class ModApplier(TransformerBase):
             for func_node in func_nodes:
                 func_name_node = func_node.element(NameNode)
                 if func_name_node.astext() == mod_func_name_node.astext():
+                    attrs = get_merged_node_attributes(func_node, mod_func_node)
+                    func_node.attributes = attrs
 
                     arg_list_node = func_node.element(ArgumentListNode)
                     for mod_arg_node in mod_arg_nodes:
@@ -212,6 +242,9 @@ class ModApplier(TransformerBase):
                 class_name = class_name_node.astext()
                 if class_name != mod_class_name:
                     continue
+
+                attrs = get_merged_node_attributes(class_node, mod_class_node)
+                class_node.attributes = attrs
 
                 func_list_node = class_node.element(FunctionListNode)
                 mod_func_list_node = mod_class_node.element(FunctionListNode)

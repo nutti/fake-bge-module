@@ -30,15 +30,13 @@
 
 .. class:: bpy_prop_collection
 
-   .. base-class:: typing.Generic[GenericType1]
-
-      :mod-option base-class: skip-refine
+   :generic-types: _GenericType1
 
    .. method:: __getitem__(key)
 
       :type key: int | str
       :mod-option arg key: skip-refine
-      :rtype: GenericType1
+      :rtype: _GenericType1
       :mod-option rtype: skip-refine
       :option function: overload
 
@@ -46,25 +44,41 @@
 
       :type key: slice
       :mod-option arg key: skip-refine
-      :rtype: tuple[GenericType1, ...]
+      :rtype: tuple[_GenericType1, ...]
       :mod-option rtype: skip-refine
       :option function: overload
 
    .. method:: __setitem__(key, value)
 
+      :type key: int | str
+      :mod-option arg key: skip-refine
+      :type value: GenericType1 | None
+      :mod-option arg value: skip-refine
+
+   .. method:: __setitem__(key, value)
+
       :type key: int
       :mod-option arg key: skip-refine
-      :type value: GenericType1
+      :type value: _GenericType1 | None
       :mod-option arg value: skip-refine
+      :option function: overload
+
+   .. method:: __setitem__(key, value)
+
+      :type key: str
+      :mod-option arg key: skip-refine
+      :type value: _GenericType1
+      :mod-option arg value: skip-refine
+      :option function: overload
 
    .. method:: __iter__()
 
-      :rtype: collections.abc.Iterator[GenericType1]
+      :rtype: collections.abc.Iterator[_GenericType1]
       :mod-option rtype: skip-refine
 
    .. method:: __next__()
 
-      :rtype: GenericType1
+      :rtype: _GenericType1
       :mod-option rtype: skip-refine
 
    .. method:: __len__()
@@ -74,21 +88,20 @@
 
    .. method:: __contains__(key)
 
-      :type key: str | tuple[str, ...]
+      :type key: str | tuple[str, ...] | _GenericType1
       :mod-option arg key: skip-refine
       :rtype: bool
       :mod-option rtype: skip-refine
 
    .. method:: get()
 
-      :rtype: GenericType1 | GenericType2
+      :rtype: _GenericType1 | _GenericType2
       :mod-option rtype: skip-refine
+      :generic-types: _GenericType2
 
 .. class:: bpy_struct
 
-   .. base-class:: typing.Generic[GenericType1]
-
-      :mod-option base-class: skip-refine
+   :generic-types: _GenericType1
 
    .. attribute:: bl_rna
 

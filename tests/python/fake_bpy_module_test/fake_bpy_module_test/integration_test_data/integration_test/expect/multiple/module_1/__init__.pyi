@@ -3,10 +3,7 @@ import collections.abc
 import typing_extensions
 import module_1.submodule_1
 
-from . import submodule_1
-
-GenericType1 = typing.TypeVar("GenericType1")
-GenericType2 = typing.TypeVar("GenericType2")
+from . import submodule_1 as submodule_1
 
 class ClassA(module_1.submodule_1.BaseClass1):
     """ClassA description"""
@@ -25,4 +22,3 @@ class ClassA(module_1.submodule_1.BaseClass1):
         :return: method_1 return description
         :rtype: int
         """
-        ...

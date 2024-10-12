@@ -26,12 +26,12 @@
 
    .. method:: __mul__(other)
 
-      :type other: int, float
+      :type other: float
       :rtype: :class:`Color`
 
    .. method:: __truediv__(other)
 
-      :type other: int, float
+      :type other: float
       :rtype: :class:`Color`
 
    .. method:: __radd__(other)
@@ -46,12 +46,12 @@
 
    .. method:: __rmul__(other)
 
-      :type other: int, float
+      :type other: float
       :rtype: :class:`Color`
 
    .. method:: __rtruediv__(other)
 
-      :type other: int, float
+      :type other: float
       :rtype: :class:`Color`
 
    .. method:: __iadd__(other)
@@ -66,12 +66,12 @@
 
    .. method:: __imul__(other)
 
-      :type other: int, float
+      :type other: float
       :rtype: :class:`Color`
 
    .. method:: __itruediv__(other)
 
-      :type other: int, float
+      :type other: float
       :rtype: :class:`Color`
 
    .. method:: __getitem__(key)
@@ -199,7 +199,7 @@
 
    .. method:: __mul__(other)
 
-      :type other: int, float
+      :type other: float
       :rtype: :class:`Matrix`
 
    .. method:: __matmul__(other)
@@ -226,12 +226,12 @@
 
    .. method:: __rmul__(other)
 
-      :type other: int, float
+      :type other: float
       :rtype: :class:`Matrix`
 
    .. method:: __imul__(other)
 
-      :type other: int, float
+      :type other: float
       :rtype: :class:`Matrix`
 
 .. class:: Quaternion
@@ -290,7 +290,7 @@
 
    .. method:: __mul__(other)
 
-      :type other: int, float, :class:`Quaternion`
+      :type other: float, :class:`Quaternion`
       :rtype: :class:`Quaternion`
 
    .. method:: __matmul__(other)
@@ -317,12 +317,12 @@
 
    .. method:: __rmul__(other)
 
-      :type other: int, float, :class:`Quaternion`
+      :type other: float, :class:`Quaternion`
       :rtype: :class:`Quaternion`
 
    .. method:: __imul__(other)
 
-      :type other: int, float, :class:`Quaternion`
+      :type other: float, :class:`Quaternion`
       :rtype: :class:`Quaternion`
 
 .. class:: Vector
@@ -385,12 +385,19 @@
 
    .. method:: __mul__(other)
 
-      :type other: int, float
+      :type other: float
       :rtype: :class:`Vector`
+      :option function: overload
+
+   .. method:: __mul__(other)
+
+      :type other: :class:`Vector`
+      :rtype: :class:`Vector`
+      :option function: overload
 
    .. method:: __truediv__(other)
 
-      :type other: int, float
+      :type other: float
       :rtype: :class:`Vector`
 
    .. method:: __matmul__(other)
@@ -417,12 +424,12 @@
 
    .. method:: __rmul__(other)
 
-      :type other: int, float
+      :type other: float
       :rtype: :class:`Vector`
 
    .. method:: __rtruediv__(other)
 
-      :type other: int, float
+      :type other: float
       :rtype: :class:`Vector`
 
    .. method:: __iadd__(other)
@@ -437,10 +444,10 @@
 
    .. method:: __imul__(other)
 
-      :type other: int, float
+      :type other: float
       :rtype: :class:`Vector`
 
    .. method:: __itruediv__(other)
 
-      :type other: int, float
+      :type other: float
       :rtype: :class:`Vector`

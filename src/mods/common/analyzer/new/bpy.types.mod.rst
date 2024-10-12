@@ -4,35 +4,33 @@
 
 .. class:: bpy_prop_array
 
-   .. base-class:: typing.Generic[GenericType1]
-
-      :mod-option base-class: skip-refine
+   :generic-types: _GenericType1
 
    .. method:: __get__(instance, owner)
 
-      :rtype: :class:`bpy_prop_array`\ [GenericType1]
+      :rtype: :class:`bpy_prop_array`\ [_GenericType1]
       :mod-option rtype: skip-refine
 
    .. method:: __set__(instance, value)
 
-      :type value: collections.abc.Iterable[GenericType1]
+      :type value: collections.abc.Iterable[_GenericType1]
       :mod-option arg value: skip-refine
 
    .. method:: foreach_get(seq)
 
-      :type seq: collections.abc.MutableSequence[GenericType1] | typing_extensions.Buffer
+      :type seq: collections.abc.MutableSequence[_GenericType1] | typing_extensions.Buffer
       :mod-option arg seq: skip-refine
 
    .. method:: foreach_set(seq)
 
-      :type seq: collections.abc.Sequence[GenericType1] | typing_extensions.Buffer
+      :type seq: collections.abc.Sequence[_GenericType1] | typing_extensions.Buffer
       :mod-option arg seq: skip-refine
 
    .. method:: __getitem__(key)
 
       :type key: int
       :mod-option arg key: skip-refine
-      :rtype: GenericType1
+      :rtype: _GenericType1
       :mod-option rtype: skip-refine
       :option function: overload
 
@@ -40,7 +38,7 @@
 
       :type key: slice
       :mod-option arg key: skip-refine
-      :rtype: tuple[GenericType1, ...]
+      :rtype: tuple[_GenericType1, ...]
       :mod-option rtype: skip-refine
       :option function: overload
 
@@ -48,7 +46,7 @@
 
       :type key: int
       :mod-option arg key: skip-refine
-      :type value: GenericType1
+      :type value: _GenericType1
       :mod-option arg value: skip-refine
       :option function: overload
 
@@ -56,7 +54,7 @@
 
       :type key: slice
       :mod-option arg key: skip-refine
-      :type value: collections.abc.Iterable[GenericType1]
+      :type value: collections.abc.Iterable[_GenericType1]
       :mod-option arg value: skip-refine
       :option function: overload
 
@@ -67,12 +65,12 @@
 
    .. method:: __iter__()
 
-      :rtype: collections.abc.Iterator[GenericType1]
+      :rtype: collections.abc.Iterator[_GenericType1]
       :mod-option rtype: skip-refine
 
    .. method:: __next__()
 
-      :rtype: GenericType1
+      :rtype: _GenericType1
       :mod-option rtype: skip-refine
 
    .. method:: __len__()

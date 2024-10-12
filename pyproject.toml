@@ -4,7 +4,7 @@ requires = ["setuptools"]
 [project]
 name = "fake-bge-module"
 description = "Collection of the fake Blender Game Engine (BGE) Python API module for the code completion."
-requires-python = ">=3.8"
+requires-python = ">=3.12"
 readme = "README.md"
 license = {file = "LICENSE"}
 authors = [
@@ -80,6 +80,12 @@ ignore = [
     "PLR2004",
     "SIM102",
     "INP001",
+    # flake8-pyi
+    "PYI011",
+    "PYI014",
+    "PYI018",
+    "PYI021",
+    "PYI054",
 ]
 
 [tool.ruff.lint.mccabe]

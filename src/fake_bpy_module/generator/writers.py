@@ -25,6 +25,9 @@ from fake_bpy_module.analyzer.nodes import (
     DependencyListNode,
     DependencyNode,
     DescriptionNode,
+    EnumItemListNode,
+    EnumItemNode,
+    EnumNode,
     FunctionListNode,
     FunctionNode,
     FunctionReturnNode,
@@ -45,6 +48,7 @@ def sorted_entry_point_nodes(document: nodes.document) -> list[NodeBase]:
     all_class_nodes: list[ClassNode] = []
     all_function_nodes: list[FunctionNode] = []
     all_data_nodes: list[DataNode] = []
+    all_enum_nodes: list[EnumNode] = []
     all_high_priority_class_nodes: list[ClassNode] = []
 
     class_nodes = find_children(document, ClassNode)
@@ -57,6 +61,7 @@ def sorted_entry_point_nodes(document: nodes.document) -> list[NodeBase]:
             all_class_nodes.append(class_node)
     all_function_nodes.extend(find_children(document, FunctionNode))
     all_data_nodes.extend(find_children(document, DataNode))
+    all_enum_nodes.extend(find_children(document, EnumNode))
 
     all_class_nodes = all_high_priority_class_nodes \
         + sorted(all_class_nodes, key=lambda n: n.element(NameNode).astext())
@@ -96,8 +101,13 @@ def sorted_entry_point_nodes(document: nodes.document) -> list[NodeBase]:
     sorted_constant_nodes = sorted(
         all_data_nodes, key=lambda n: n.element(NameNode).astext())
 
+    # Sort enum data
+    sorted_enum_nodes = sorted(
+        all_enum_nodes, key=lambda n: n.element(NameNode).astext())
+
     # Merge
-    sorted_nodes = sorted_class_nodes
+    sorted_nodes = sorted_enum_nodes
+    sorted_nodes.extend(sorted_class_nodes)
     sorted_nodes.extend(sorted_function_nodes)
     sorted_nodes.extend(sorted_constant_nodes)
 
@@ -105,7 +115,11 @@ def sorted_entry_point_nodes(document: nodes.document) -> list[NodeBase]:
 
 
 def make_union(dtype_nodes: list[DataTypeNode]) -> str:
-    return ' | '.join(sorted({n.to_string() for n in set(dtype_nodes)}))
+    types = {n.to_string() for n in set(dtype_nodes)}
+    # Only keep float as according to flake8-pyi PIY041
+    if "int" in types and "float" in types:
+        types.remove("int")
+    return ' | '.join(sorted(types))
 
 
 class BaseWriter(metaclass=abc.ABCMeta):
@@ -159,7 +173,11 @@ class PyCodeWriterBase(BaseWriter):
 
         wt = self._writer
 
-        wt.add("def " + func_name + "(")
+        gen_types = ""
+        if "generic-types" in func_node.attributes:
+            gen_types = f"[{func_node.attributes['generic-types']}]"
+        wt.add(f"def {func_name}{gen_types}(")
+
         start_kwarg = False
         for i, arg_node in enumerate(arg_nodes):
             arg_name = arg_node.element(NameNode).astext()
@@ -259,8 +277,8 @@ class PyCodeWriterBase(BaseWriter):
                                 break
                         wt.addln(f":rtype: {dtype}")
                 wt.addln("'''")
-                wt.new_line(1)
-            wt.addln(self.ellipsis_strings["function"])
+            else:
+                wt.addln(self.ellipsis_strings["function"])
             wt.new_line(2)
 
     # pylint: disable=R0914,R0915
@@ -275,8 +293,12 @@ class PyCodeWriterBase(BaseWriter):
         method_nodes = find_children(class_node.element(FunctionListNode),
                                      FunctionNode)
 
+        gen_types = ""
+        if "generic-types" in class_node.attributes:
+            gen_types = f"[{class_node.attributes['generic-types']}]"
+
         if base_class_list_node.empty():
-            wt.addln(f"class {name_node.astext()}:")
+            wt.addln(f"class {name_node.astext()}{gen_types}:")
         else:
             base_class_nodes = find_children(base_class_list_node,
                                              BaseClassNode)
@@ -302,7 +324,8 @@ class PyCodeWriterBase(BaseWriter):
                 tmp = dtypes[bpy_struct_index]
                 dtypes[bpy_struct_index] = dtypes[bpy_prop_collection_index]
                 dtypes[bpy_prop_collection_index] = tmp
-            wt.addln(f"class {name_node.astext()}({', '.join(dtypes)}):")
+            wt.addln(f"class {name_node.astext()}{gen_types}"
+                     f"({', '.join(dtypes)}):")
 
         with CodeWriterIndent(1):
             if not desc_node.empty():
@@ -354,25 +377,29 @@ class PyCodeWriterBase(BaseWriter):
                 if "option" in method_node.attributes:
                     if method_node.attributes["option"] == "overload":
                         wt.addln("@typing.overload")
+
+                gen_types = ""
+                if "generic-types" in method_node.attributes:
+                    gen_types = f"[{method_node.attributes['generic-types']}]"
                 if func_type in ("function", "method"):
                     if not arg_list_node.empty():
-                        wt.add(f"def {name_node.astext()}(self, ")
+                        wt.add(f"def {name_node.astext()}{gen_types}(self, ")
                     else:
-                        wt.add(f"def {name_node.astext()}(self")
+                        wt.add(f"def {name_node.astext()}{gen_types}(self")
                 elif func_type == "classmethod":
                     if not arg_list_node.empty():
                         wt.addln("@classmethod")
-                        wt.add(f"def {name_node.astext()}(cls, ")
+                        wt.add(f"def {name_node.astext()}{gen_types}(cls, ")
                     else:
                         wt.addln("@classmethod")
-                        wt.add(f"def {name_node.astext()}(cls")
+                        wt.add(f"def {name_node.astext()}{gen_types}(cls")
                 elif func_type == "staticmethod":
                     if not arg_list_node.empty():
                         wt.addln("@staticmethod")
-                        wt.add(f"def {name_node.astext()}(")
+                        wt.add(f"def {name_node.astext()}{gen_types}(")
                     else:
                         wt.addln("@staticmethod")
-                        wt.add(f"def {name_node.astext()}(")
+                        wt.add(f"def {name_node.astext()}{gen_types}(")
                 else:
                     raise NotImplementedError(
                         f"func_type={func_type} is not supported")
@@ -484,11 +511,13 @@ class PyCodeWriterBase(BaseWriter):
                                         break
                                 wt.addln(f":rtype: {dtype}")
                         wt.addln("'''")
-
-                    wt.addln(self.ellipsis_strings["method"])
+                    else:
+                        wt.addln(self.ellipsis_strings["method"])
                     wt.new_line()
 
-            if len(attr_nodes) == 0 and len(method_nodes) == 0:
+            if (len(attr_nodes) == 0
+                    and len(method_nodes) == 0
+                    and desc_node.empty()):
                 wt.addln(self.ellipsis_strings["class"])
                 wt.new_line(2)
 
@@ -521,6 +550,27 @@ class PyCodeWriterBase(BaseWriter):
             wt.addln(f"''' {remove_unencodable(desc_node.astext())}")
             wt.addln("'''")
         wt.new_line(2)
+
+    def _write_enum_code(self, enum_node: EnumNode) -> None:
+        wt = self._writer
+
+        enum_name = enum_node.element(NameNode).astext()
+        enum_item_list_node = enum_node.element(EnumItemListNode)
+        enum_item_nodes = find_children(enum_item_list_node, EnumItemNode)
+
+        enum_item_strs = []
+        for enum_item_node in enum_item_nodes:
+            enum_item_name = enum_item_node.element(NameNode).astext()
+            enum_item_desc = enum_item_node.element(DescriptionNode).astext()
+            enum_item_desc = enum_item_desc.replace("\n", "")
+            if len(enum_item_desc) != 0:
+                enum_item_strs.append(f"'{enum_item_name}',"
+                                      f"  # {enum_item_desc}")
+            else:
+                enum_item_strs.append(f"'{enum_item_name}',")
+
+        wt.addln(f"type {enum_name} = typing.Literal[\n"
+                 f"{'\n'.join(enum_item_strs)}\n]")
 
     def write(self, filename: str, document: nodes.document,
               style_config: str = 'ruff') -> None:
@@ -563,7 +613,7 @@ class PyCodeWriterBase(BaseWriter):
                 child_nodes = find_children(child_list_node, ChildModuleNode)
                 children = [node.astext() for node in child_nodes]
                 for child in sorted(children):
-                    wt.addln(f"from . import {child}")
+                    wt.addln(f"from . import {child} as {child}")
             if len(children) > 0:
                 wt.new_line()
 
@@ -572,8 +622,6 @@ class PyCodeWriterBase(BaseWriter):
 
             # for generic type
             wt.new_line()
-            wt.addln('GenericType1 = typing.TypeVar("GenericType1")')
-            wt.addln('GenericType2 = typing.TypeVar("GenericType2")')
 
             for node in sorted_data:
                 if isinstance(node, FunctionNode):
@@ -582,6 +630,8 @@ class PyCodeWriterBase(BaseWriter):
                     self._write_class_code(node)
                 elif isinstance(node, DataNode):
                     self._write_constant_code(node)
+                elif isinstance(node, EnumNode):
+                    self._write_enum_code(node)
 
             wt.format(style_config, self.file_format)
             wt.write(file)
@@ -697,6 +747,28 @@ class JsonWriter(BaseWriter):
 
         return data_data
 
+    def _create_enum_json_data(self, enum_node: EnumNode) -> dict:
+        enum_data = {
+            "type": "enum",
+            "name": enum_node.element(NameNode).astext(),
+            "description": enum_node.element(DescriptionNode).astext(),
+            "enum_items": [],
+            "options": self._clean_node_attributes(enum_node.attributes),
+        }
+
+        enum_item_nodes = find_children(enum_node.element(EnumItemListNode),
+                                        EnumItemNode)
+        for enum_item_node in enum_item_nodes:
+            enum_item_data = {
+                "name": enum_item_node.element(NameNode).astext(),
+                "description": enum_item_node.element(DescriptionNode).astext(),
+                "options": self._clean_node_attributes(
+                    enum_item_node.attributes),
+            }
+            enum_data["enum_items"].append(enum_item_data)
+
+        return enum_data
+
     def _create_class_json_data(self, class_node: ClassNode) -> dict:
         class_data = {
             "type": "class",
@@ -788,10 +860,7 @@ class JsonWriter(BaseWriter):
         # for generic type
         json_data.append({
             "type": "code",
-            "contents": [
-                'GenericType1 = typing.TypeVar("GenericType1")',
-                'GenericType2 = typing.TypeVar("GenericType2")',
-            ]
+            "contents": []
         })
 
         for node in sorted_data:
@@ -801,6 +870,8 @@ class JsonWriter(BaseWriter):
                 json_data.append(self._create_function_json_data(node))
             elif isinstance(node, DataNode):
                 json_data.append(self._create_constant_json_data(node))
+            elif isinstance(node, EnumNode):
+                json_data.append(self._create_enum_json_data(node))
 
         with Path(f"{filename}.{self.file_format}").open(
                 "w", newline="\n", encoding="utf-8") as f:

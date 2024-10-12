@@ -62,7 +62,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
           cache: "pip"
           cache-dependency-path: 'src/requirements.txt'
 
@@ -127,6 +127,9 @@ jobs:
         with:
           name: fake_bge_modules_${{ matrix.upbge_version}}_raw_${{ needs.set_versions.outputs.file_version }}
           path: "raw_modules/fake_bge_module*"
+
+      - name: Run Ruff flake8-pyi checks
+        run: bash tools/pip_package/run_ruff_flake8_pyi.sh ${{ matrix.upbge_version }}
 
       - name: Test Generated Modules
         run: bash tests/run_tests.sh raw_modules

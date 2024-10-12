@@ -163,6 +163,39 @@ class ModuleNameFixtureTest(TransformerTestBase):
             self.compare_with_file_contents(trans.pformat(), expect)
 
 
+class RnaEnumConverterTest(TransformerTestBase):
+
+    name = "RnaEnumConverterTest"
+    module_name = __module__
+    data_dir = Path(
+        f"{Path(__file__).parent}/transformer_test_data/"
+        "rna_enum_converter_test").resolve()
+
+    def test_basic(self) -> None:
+        rst_files = ["basic.rst"]
+        expect_files = ["basic.xml"]
+        expect_transformed_files = ["basic_transformed.xml"]
+        rst_files = [f"{self.data_dir}/input/{f}" for f in rst_files]
+        expect_files = [f"{self.data_dir}/expect/{f}" for f in expect_files]
+        expect_transformed_files = [f"{self.data_dir}/expect/{f}"
+                                    for f in expect_transformed_files]
+
+        analyzer = BaseAnalyzer()
+        documents = analyzer.analyze(rst_files)
+
+        self.assertEqual(len(documents), len(expect_files))
+        for doc, expect in zip(documents, expect_files, strict=True):
+            self.compare_with_file_contents(doc.pformat(), expect)
+
+        transformer = Transformer(["rna_enum_converter"])
+        transformed = transformer.transform(documents)
+
+        self.assertEqual(len(transformed), len(expect_transformed_files))
+        for trans, expect in zip(transformed, expect_transformed_files,
+                                 strict=True):
+            self.compare_with_file_contents(trans.pformat(), expect)
+
+
 class RstSpecificNodeCleanerTest(TransformerTestBase):
 
     name = "RstSpecificNodeCleanerTest"
@@ -436,6 +469,13 @@ class CannonicalDataTypeRewriterTest(TransformerTestBase):
         package_structure.add_child(module_b_structure)
         module_structure = ModuleStructure()
         module_structure.name = "submodule_3"
+        module_b_structure.add_child(module_structure)
+
+        module_b_structure = ModuleStructure()
+        module_b_structure.name = "module_3"
+        package_structure.add_child(module_b_structure)
+        module_structure = ModuleStructure()
+        module_structure.name = "submodule_4"
         module_b_structure.add_child(module_structure)
 
         self.assertEqual(len(documents), len(expect_files))
@@ -714,11 +754,21 @@ class DataTypeRefinerTest(TransformerTestBase):
         analyzer = BaseAnalyzer()
         documents = analyzer.analyze(rst_files)
 
+        entry_points = []
+        entry_point = EntryPoint("bpy.types", "Context", "class")
+        entry_points.append(entry_point)
+        entry_point = EntryPoint("bpy.types", "ID", "class")
+        entry_points.append(entry_point)
+
         self.assertEqual(len(documents), len(expect_files))
         for doc, expect in zip(documents, expect_files, strict=True):
             self.compare_with_file_contents(doc.pformat(), expect)
 
-        transformer = Transformer(["data_type_refiner"], {})
+        transformer = Transformer(["data_type_refiner"], {
+            "data_type_refiner": {
+                "entry_points": entry_points,
+            }
+        })
         transformed = transformer.transform(documents)
 
         self.assertEqual(len(transformed), len(expect_transformed_files))
@@ -826,6 +876,13 @@ class DependencyBuilderTest(TransformerTestBase):
         package_structure.add_child(module_b_structure)
         module_structure = ModuleStructure()
         module_structure.name = "submodule_3"
+        module_b_structure.add_child(module_structure)
+
+        module_b_structure = ModuleStructure()
+        module_b_structure.name = "module_3"
+        package_structure.add_child(module_b_structure)
+        module_structure = ModuleStructure()
+        module_structure.name = "submodule_4"
         module_b_structure.add_child(module_structure)
 
         self.assertEqual(len(documents), len(expect_files))
@@ -1139,6 +1196,35 @@ class ModApplierTest(TransformerTestBase):
         mod_files = ["update_function.mod.rst"]
         expect_mod_files = ["update_function.mod.xml"]
         expect_files = ["update_function.xml"]
+        rst_files = [f"{self.data_dir}/input/{f}" for f in rst_files]
+        mod_files = [f"{self.data_dir}/input/{f}" for f in mod_files]
+        expect_mod_files = [f"{self.data_dir}/expect/{f}"
+                            for f in expect_mod_files]
+        expect_files = [f"{self.data_dir}/expect/{f}" for f in expect_files]
+
+        analyzer = BaseAnalyzer()
+        documents = analyzer.analyze(rst_files)
+
+        transformer = Transformer(["mod_applier"],
+                                  {"mod_applier": {"mod_files": mod_files}})
+        transformed = transformer.transform(documents)
+        self.assertEqual(len(transformer.get_transformers()), 1)
+        mod_documents = transformer.get_transformers()[0].get_mod_documents()
+
+        self.assertEqual(len(mod_documents), len(expect_mod_files))
+        for mod_doc, expect_file in zip(mod_documents, expect_mod_files,
+                                        strict=True):
+            self.compare_with_file_contents(mod_doc.pformat(), expect_file)
+
+        self.assertEqual(len(transformed), len(rst_files))
+        for doc, expect_file in zip(transformed, expect_files, strict=True):
+            self.compare_with_file_contents(doc.pformat(), expect_file)
+
+    def test_update_function_update_argument_type(self) -> None:
+        rst_files = ["base.rst"]
+        mod_files = ["update_function_update_argument_type.mod.rst"]
+        expect_mod_files = ["update_function_update_argument_type.mod.xml"]
+        expect_files = ["update_function_update_argument_type.xml"]
         rst_files = [f"{self.data_dir}/input/{f}" for f in rst_files]
         mod_files = [f"{self.data_dir}/input/{f}" for f in mod_files]
         expect_mod_files = [f"{self.data_dir}/expect/{f}"

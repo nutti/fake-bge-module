@@ -1,11 +1,8 @@
 import re
-from pathlib import Path
 from typing import Any, Self
 
 from docutils import nodes
-from docutils.core import publish_doctree
 
-from fake_bpy_module import config
 from fake_bpy_module.analyzer.nodes import (
     ArgumentListNode,
     ArgumentNode,
@@ -19,6 +16,7 @@ from fake_bpy_module.analyzer.nodes import (
     DataTypeNode,
     DefaultValueNode,
     DescriptionNode,
+    EnumNode,
     FunctionListNode,
     FunctionNode,
     FunctionReturnNode,
@@ -26,10 +24,11 @@ from fake_bpy_module.analyzer.nodes import (
     NameNode,
     make_data_type_node,
 )
-from fake_bpy_module.analyzer.roles import ClassRef
+from fake_bpy_module.analyzer.roles import ClassRef, EnumRef
 from fake_bpy_module.utils import (
     LOG_LEVEL_DEBUG,
     LOG_LEVEL_WARN,
+    append_child,
     find_children,
     get_first_child,
     output_log,
@@ -65,6 +64,8 @@ REGEX_MATCH_DATA_TYPE_LIST_OF_NUMBER_OR_STRING = re.compile(r"^(list|sequence) o
 REGEX_MATCH_DATA_TYPE_LIST_OF_PARENTHESES_VALUE = re.compile(r"^list of \(([a-zA-Z.,` ]+)\)")  # noqa: E501
 REGEX_MATCH_DATA_TYPE_PAIR_OF_VALUE = re.compile(r"^pair of `([A-Za-z0-9_.]+)`")
 REGEX_MATCH_DATA_TYPE_BMELEMSEQ_OF_VALUE = re.compile(r"`BMElemSeq` of `([a-zA-Z0-9]+)`$")  # noqa: E501
+REGEX_MATCH_DATA_TYPE_BMLAYERCOLLECTION_OF_VALUE = re.compile(r"`BMLayerCollection` of ([a-zA-Z0-9_]+)$")  # noqa: E501
+REGEX_MATCH_DATA_TYPE_BMLAYERCOLLECTION_OF_CLASS = re.compile(r"`BMLayerCollection` of `([a-zA-Z0-9._]+)`$")  # noqa: E501
 REGEX_MATCH_DATA_TYPE_TUPLE_OF_VALUE = re.compile(r"^tuple of `([a-zA-Z0-9.]+)`('s)*$")  # noqa: E501
 REGEX_MATCH_DATA_TYPE_LIST_OR_DICT_OR_SET_OR_TUPLE = re.compile(r"^`*(list|dict|set|tuple)`*\.*$")  # noqa: E501
 REGEX_MATCH_DATA_TYPE_OT = re.compile(r"^`([A-Z]+)_OT_([A-Za-z_]+)`$")
@@ -74,23 +75,22 @@ REGEX_MATCH_DATA_TYPE_START_AND_END_WITH_PARENTHESES = re.compile(r"^\(([a-zA-Z0
 REGEX_MATCH_DATA_TYPE_NAME = re.compile(r"^[a-zA-Z0-9_.]+$")
 # pylint: enable=line-too-long
 
+REGEX_MATCH_DESCRIPTION_TYPE_IN = re.compile(r"type in `(.*)`")
+REGEX_MATCH_DESCRIPTION_ENUMERATOR_IN = re.compile(r"^Enumerator in `(.*)`")
+
 _REGEX_DATA_TYPE_OPTION_STR = re.compile(r"\(([a-zA-Z, ]+?)\)$")
 _REGEX_DATA_TYPE_OPTION_END_WITH_NONE = re.compile(r"or None$")
 _REGEX_DATA_TYPE_OPTION_OPTIONAL = re.compile(r"(^|^An |\()[oO]ptional(\s|\))")
 _REGEX_DATA_TYPE_STARTS_WITH_COLLECTION = re.compile(r"^(list|tuple|dict)")
 
 
-def get_rna_enum_items(dtype_str: str) -> str:
+def snake_to_camel(name: str) -> str:
+    return "".join(w.title() for w in name.split("_"))
+
+
+def get_rna_enum_name(dtype_str: str) -> str:
     rna_enum_name = dtype_str.split("`")[1][len("rna_enum_"):]
-    rna_enum_path = (Path(config.get_input_dir())
-                     / "bpy_types_enum_items"
-                     / f"{rna_enum_name}.rst")
-    content = rna_enum_path.read_text()
-    doctree = publish_doctree(content).asdom()
-    return ", ".join(
-        repr(e.firstChild.nodeValue)
-        for e in doctree.getElementsByTagName("field_name")
-    )
+    return snake_to_camel(rna_enum_name)
 
 
 class EntryPoint:
@@ -142,6 +142,12 @@ class DataTypeRefiner(TransformerBase):
                 entry = EntryPoint(module_name, data_name, "constant")
                 entry_points.append(entry)
 
+            enum_nodes = find_children(document, EnumNode)
+            for enum_node in enum_nodes:
+                enum_name = enum_node.element(NameNode).astext()
+                entry = EntryPoint(module_name, enum_name, "enum")
+                entry_points.append(entry)
+
         return entry_points
 
     def _parse_custom_data_type(
@@ -161,7 +167,7 @@ class DataTypeRefiner(TransformerBase):
 
         return None
 
-    # pylint: disable=R0911,R0912,R0913
+    # pylint: disable=R0911,R0912,R0913,R0915
     def _get_refined_data_type_fast(  # noqa: C901, PLR0911, PLR0912
         self, dtype_str: str, uniq_full_names: set[str],
         uniq_module_names: set[str], module_name: str,
@@ -250,13 +256,21 @@ class DataTypeRefiner(TransformerBase):
 
         # [Ex] enum set in `rna_enum_operator_return_items`
         if REGEX_MATCH_DATA_TYPE_SET_IN_RNA.match(dtype_str):
-            enum_values = get_rna_enum_items(dtype_str)
-            return [make_data_type_node(f"set[typing.Literal[{enum_values}]]")]
+            enum_literal_type = get_rna_enum_name(dtype_str)
+            dtype_node = DataTypeNode()
+            append_child(dtype_node, nodes.Text("set["))
+            append_child(dtype_node,
+                         EnumRef(text=f"bpy.typing.{enum_literal_type}"))
+            append_child(dtype_node, nodes.Text("]"))
+            return [dtype_node]
 
         # [Ex] enum in :ref:`rna_enum_object_modifier_type_items`, (optional)
         if dtype_str.startswith("enum in `rna"):
-            enum_values = get_rna_enum_items(dtype_str)
-            return [make_data_type_node(f"typing.Literal[{enum_values}]")]
+            enum_literal_type = get_rna_enum_name(dtype_str)
+            dtype_node = DataTypeNode()
+            append_child(dtype_node,
+                         EnumRef(text=f"bpy.typing.{enum_literal_type}"))
+            return [dtype_node]
 
         # [Ex] Enumerated constant
         if dtype_str == "Enumerated constant":
@@ -456,9 +470,22 @@ class DataTypeRefiner(TransformerBase):
             s = self._parse_custom_data_type(
                 m.group(1), uniq_full_names, uniq_module_names, module_name)
             if s:
-                return [
-                    make_data_type_node(f"`bmesh.types.BMElemSeq`[`{s}`]")
-                ]
+                return [make_data_type_node(f"`bmesh.types.BMElemSeq`[`{s}`]")]
+        # [Ex] BMLayerCollection of float
+        if m := REGEX_MATCH_DATA_TYPE_BMLAYERCOLLECTION_OF_VALUE.match(
+                dtype_str):
+            return [make_data_type_node(
+                f"`bmesh.types.BMLayerCollection`[{m.group(1)}]"
+            )]
+        # [Ex] BMLayerCollection of `mathutils.Vector`
+        if m := REGEX_MATCH_DATA_TYPE_BMLAYERCOLLECTION_OF_CLASS.match(
+                dtype_str):
+            s = self._parse_custom_data_type(
+                m.group(1), uniq_full_names, uniq_module_names, module_name)
+            if s:
+                return [make_data_type_node(
+                    f"`bmesh.types.BMLayerCollection`[`{s}`]"
+                )]
         # [Ex] tuple of mathutils.Vector's
         if m := REGEX_MATCH_DATA_TYPE_TUPLE_OF_VALUE.match(dtype_str):
             s = self._parse_custom_data_type(
@@ -618,6 +645,13 @@ class DataTypeRefiner(TransformerBase):
                 )
                 is_optional = True
 
+        # If default value is None, data type must accept None.
+        if is_never_none:
+            if additional_info is not None:
+                if "default_value" in additional_info:
+                    if additional_info["default_value"] == "None":
+                        is_never_none = False
+
         options = []
         if is_never_none:
             options.append("never none")
@@ -628,7 +662,8 @@ class DataTypeRefiner(TransformerBase):
 
     # pylint: disable=W0102
     def _get_refined_data_type(
-        self, dtype_str: str, module_name: str, variable_kind: str,
+        self, dtype_str: str, module_name: str,
+        variable_kind: str,
         is_pointer_prop: bool = False,
         description_str: str | None = None,
         additional_info: dict[str, Any] | None = None,
@@ -647,20 +682,39 @@ class DataTypeRefiner(TransformerBase):
             dtype_str_changed, module_name, variable_kind,
             additional_info=additional_info)
 
+        def is_cls_attr_in_never_none_blacklist(
+                class_full_name: str, attr_name: str) -> bool:
+            blacklist = (
+                "bpy.types.ID.library"
+            )
+            return f"{class_full_name}.{attr_name}" in blacklist
+
         # Add options.
         for r in result:
             option_results = original_options.copy()
             option_results.extend(options.copy())
             if "option" in r.attributes:
                 option_results.extend(r.attributes["option"].split(","))
+
             # list object will not be None.
             if (variable_kind in ('CLS_ATTR', 'CONST') and
                     "never none" not in option_results):
                 if _REGEX_DATA_TYPE_STARTS_WITH_COLLECTION.match(r.to_string()):
                     option_results.append("never none")
-            # If data type is bpy.types.Context, it will be never None.
+
+            # If data type is bpy.types.Context, it will accept None.
             if r.to_string() == "bpy.types.Context":
-                option_results.append("never none")
+                while "never none" in option_results:
+                    option_results.remove("never none")
+                option_results.append("accept none")
+
+            if variable_kind == 'CLS_ATTR':
+                if is_cls_attr_in_never_none_blacklist(
+                        additional_info["self_class"],
+                        additional_info["data_name"]):
+                    option_results.append("never none")
+
+            option_results = sorted(set(option_results))
             r.attributes["option"] = ",".join(option_results)
 
         output_log(
@@ -671,8 +725,8 @@ class DataTypeRefiner(TransformerBase):
         return result
 
     def _get_refined_data_type_internal(
-        self, dtype_str: str, module_name: str, variable_kind: str,
-        additional_info: dict[str, Any] | None = None
+        self, dtype_str: str, module_name: str,
+        variable_kind: str, additional_info: dict[str, Any] | None = None
     ) -> list[DataTypeNode]:
 
         dtype_str = dtype_str.strip()
@@ -699,8 +753,8 @@ class DataTypeRefiner(TransformerBase):
                     f"tuple[{', '.join([d.astext() for d in dtypes])}]")]
 
         result = self._get_refined_data_type_fast(
-            dtype_str, uniq_full_names, uniq_module_names, module_name,
-            variable_kind, additional_info)
+            dtype_str, uniq_full_names, uniq_module_names,
+            module_name, variable_kind, additional_info)
         if result is not None:
             return result
 
@@ -716,17 +770,21 @@ class DataTypeRefiner(TransformerBase):
             for sp in splist:
                 s = sp.strip()
                 result = self._get_refined_data_type_fast(
-                    s, uniq_full_names, uniq_module_names, module_name,
-                    variable_kind, additional_info)
+                    s, uniq_full_names, uniq_module_names,
+                    module_name, variable_kind, additional_info)
                 if result is not None:
                     dtypes.extend(result)
             return dtypes
         return []
 
     def _parse_from_description(
-        self, module_name: str, description_str: str | None = None,
+        self, module_name: str, dtype_nodes: list[DataTypeNode],
+        description_str: str | None = None,
         additional_info: dict[str, Any] | None = None
-    ) -> list[DataTypeNode]:
+    ) -> tuple[list[DataTypeNode], bool]:
+
+        if description_str is None:
+            return [], False
 
         uniq_full_names = self._entry_points_cache["uniq_full_names"]
         uniq_module_names = self._entry_points_cache["uniq_module_names"]
@@ -735,9 +793,32 @@ class DataTypeRefiner(TransformerBase):
             s = self._parse_custom_data_type(
                 additional_info["self_class"], uniq_full_names,
                 uniq_module_names, module_name)
-            return [make_data_type_node(f"`{s}`")]
+            return [make_data_type_node(f"`{s}`")], False
 
-        return []
+        if REGEX_MATCH_DESCRIPTION_ENUMERATOR_IN.match(description_str) or \
+                REGEX_MATCH_DESCRIPTION_TYPE_IN.search(description_str):
+            is_set = False
+            for dtype_node in dtype_nodes:
+                if dtype_node.to_string() == "set":
+                    is_set = True
+                    break
+
+            if is_set:
+                enum_literal_type = get_rna_enum_name(description_str)
+                dtype_node = DataTypeNode()
+                append_child(dtype_node, nodes.Text("set["))
+                append_child(dtype_node,
+                             EnumRef(text=f"bpy.typing.{enum_literal_type}"))
+                append_child(dtype_node, nodes.Text("]"))
+                return [dtype_node], True
+
+            enum_literal_type = get_rna_enum_name(description_str)
+            dtype_node = DataTypeNode()
+            append_child(dtype_node,
+                         EnumRef(text=f"bpy.typing.{enum_literal_type}"))
+            return [dtype_node], True
+
+        return [], False
 
     def _refine(self, document: nodes.document) -> None:
         def refine(dtype_list_node: DataTypeListNode, module_name: str,
@@ -746,9 +827,18 @@ class DataTypeRefiner(TransformerBase):
             dtype_nodes = find_children(dtype_list_node, DataTypeNode)
             new_dtype_nodes = []
 
-            new_dtype_nodes.extend(self._parse_from_description(
-                module_name, description_str=description_str,
-                additional_info=additional_info))
+            parsed_dtype_nodes, skip_parse_dtype_node = \
+                self._parse_from_description(
+                    module_name, dtype_nodes, description_str=description_str,
+                    additional_info=additional_info)
+            new_dtype_nodes.extend(parsed_dtype_nodes)
+
+            if skip_parse_dtype_node:
+                for dtype_node in dtype_nodes:
+                    dtype_list_node.remove(dtype_node)
+                for node in new_dtype_nodes:
+                    dtype_list_node.append_child(node)
+                return
 
             for dtype_node in dtype_nodes:
                 mod_options = []
