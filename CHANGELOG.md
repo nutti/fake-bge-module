@@ -2,7 +2,24 @@
 
 # Change Log
 
-## [Unreleased](https://github.com/nutti/fake-bge-module/compare/20231118...master)
+## [Unreleased](https://github.com/nutti/fake-bge-module/compare/20241013...main)
+
+<!-- markdownlint-disable-next-line MD013 -->
+## [20241013](https://github.com/nutti/fake-bge-module/compare/20231118...20241013) - 2024.10.13
+
+### Notice
+
+From this version, fake-bge-module requires Python 3.12.
+
+### Updated Features
+
+* Support fake-bge-module-0.30 and fake-bge-module-0.36
+* Create an alias fake-bge-module to fake-bge-module-latest
+
+### Other Updates
+
+* Merge fake-bpy-module update ([20241010](https://github.com/nutti/fake-bpy-module/releases/tag/20241010))
+* Fix bugs
 
 <!-- markdownlint-disable-next-line MD013 -->
 ## [20231118](https://github.com/nutti/fake-bge-module/compare/20200804...20231118) - 2023.11.18

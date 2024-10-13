@@ -15,8 +15,7 @@ API modules for the code completion in commonly used IDEs.
 
 ## Requirements
 
-fake-bge-module uses typing module and type hints which are available from
-Python 3.7. Check your Python version is >= 3.7.
+fake-bpy-module requires Python 3.12.
 
 ## Install
 
@@ -67,6 +66,8 @@ being too big for intelliSense to work.*
 |Version|PyPI|
 |---|---|
 |0.2.5|[https://pypi.org/project/fake-bge-module-0.2.5/](https://pypi.org/project/fake-bge-module-0.2.5/)|
+|0.30|[https://pypi.org/project/fake-bge-module-0.30/](https://pypi.org/project/fake-bge-module-0.30/)|
+|0.36|[https://pypi.org/project/fake-bge-module-0.36/](https://pypi.org/project/fake-bge-module-0.36/)|
 |latest|[https://pypi.org/project/fake-bge-module/](https://pypi.org/project/fake-bge-module/)|
 ||[https://pypi.org/project/fake-bge-module-latest/](https://pypi.org/project/fake-bge-module-latest/)|
 
