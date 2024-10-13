@@ -182,6 +182,13 @@ rm -r ${fake_module_dir}
 cp "${SCRIPT_DIR}/../../README.md" .
 cp "${SCRIPT_DIR}/../../pyproject.toml" .
 cp "${SCRIPT_DIR}/../../setup.py" .
+
+# To test against fake-bge-module in fake-bpy-module repository, we need to 
+# mimic package name to fake-bge-module.
+if [ "${target}" = "upbge" ]; then
+    sed -i -e "s/^name = \"fake-bpy-module/name = \"fake-bge-module/g" pyproject.toml
+fi
+
 sed -i -e "s/^name = \"fake-${PACKAGE_NAME[$target]}-module\"$/name = \"fake-${PACKAGE_NAME[$target]}-module-${target_version}\"/g" pyproject.toml
 rm -rf fake_"${PACKAGE_NAME[$target]}"_module*.egg-info/ dist/ build/
 ls -R .

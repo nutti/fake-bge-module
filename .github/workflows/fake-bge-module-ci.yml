@@ -16,7 +16,6 @@ jobs:
   set_versions:
     name: Set build versions
     runs-on: ubuntu-latest
-    if: github.repository == 'nutti/fake-bge-module'
     outputs:
       module_version: ${{ steps.set_module_version.outputs.module_version }}
       file_version: ${{ steps.set_file_version.outputs.file_version }}
@@ -48,7 +47,6 @@ jobs:
   build_modules:
     name: Build modules
     runs-on: ubuntu-latest
-    if: github.repository == 'nutti/fake-bge-module'
     needs: [set_versions]
     strategy:
       fail-fast: false
