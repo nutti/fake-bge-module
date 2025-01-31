@@ -7,6 +7,70 @@
         <description>
     <data>
         <name>
+            data_python_typing_syntax_1
+        <description>
+        <data-type-list>
+            <data-type>
+                dict[str, 
+                <class-ref>
+                    ClassA
+                ]
+    <data>
+        <name>
+            data_python_typing_syntax_2
+        <description>
+        <data-type-list>
+            <data-type>
+                dict[
+                <class-ref>
+                    ClassA
+                , list[int]]
+    <data>
+        <name>
+            data_python_typing_syntax_3
+        <description>
+        <data-type-list>
+            <data-type>
+                list[UnknownType]
+    <data>
+        <name>
+            data_python_typing_syntax_4
+        <description>
+        <data-type-list>
+            <data-type>
+                Sequence[int]
+    <data>
+        <name>
+            data_python_typing_syntax_5
+        <description>
+        <data-type-list>
+            <data-type>
+                Callable[[int, 
+                <class-ref>
+                    ClassA
+                ], None]
+    <data>
+        <name>
+            data_python_typing_syntax_6
+        <description>
+        <data-type-list>
+            <data-type>
+                Callable[[float, int], tuple[float, int]]
+    <data>
+        <name>
+            data_multiple_lines
+        <description>
+        <data-type-list>
+            <data-type>
+                type[
+                <class-ref>
+                    ClassA
+                 | float |
+                <class-ref>
+                    module_2.ClassB
+                ]
+    <data>
+        <name>
             data_parentheses_pair
         <description>
         <data-type-list>
@@ -34,6 +98,15 @@
         <data-type-list>
             <data-type>
                 str or 
+                <class-ref>
+                    ClassA
+    <data>
+        <name>
+            data_pipe
+        <description>
+        <data-type-list>
+            <data-type>
+                str | 
                 <class-ref>
                     ClassA
     <data>

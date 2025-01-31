@@ -6,6 +6,8 @@
 
    .. method:: __init__(rgb=(0.0, 0.0, 0.0))
 
+      :type rgb: Sequence[float]
+
    .. method:: __get__(instance, owner)
 
       :rtype: :class:`Color`
@@ -98,13 +100,16 @@
 
       :type key: slice
       :mod-option arg key: skip-refine
-      :type value: collections.abc.Iterable[float]
+      :type value: collections.abc.Iterable[float] | :class:`Color`
       :mod-option arg value: skip-refine
       :option function: overload
 
 .. class:: Euler
 
    .. method:: __init__(angles=(0.0, 0.0, 0.0), order='XYZ')
+
+      :type angles: Sequence[float]
+      :type order: str
 
    .. method:: __get__(instance, owner)
 
@@ -138,13 +143,15 @@
 
       :type key: slice
       :mod-option arg key: skip-refine
-      :type value: collections.abc.Iterable[float]
+      :type value: collections.abc.Iterable[float] | :class:`Euler`
       :mod-option arg value: skip-refine
       :option function: overload
 
 .. class:: Matrix
 
    .. method:: __init__(rows=((1.0, 0.0, 0.0, 0.0), (0.0, 1.0, 0.0, 0.0), (0.0, 0.0, 1.0, 0.0), (0.0, 0.0, 0.0, 1.0)))
+
+      :type rows: Sequence[Sequence[float]]
 
    .. method:: __get__(instance, owner)
 
@@ -179,7 +186,7 @@
 
       :type key: slice
       :mod-option arg key: skip-refine
-      :type value: collections.abc.Iterable[:class:`Vector` | collections.abc.Iterable[float]]
+      :type value: collections.abc.Iterable[:class:`Vector` | collections.abc.Iterable[float]] | :class:`Matrix`
       :mod-option arg value: skip-refine
       :option function: overload
 
@@ -236,7 +243,10 @@
 
 .. class:: Quaternion
 
-   .. method:: __init__(seq=(1.0, 0.0, 0.0, 0.0))
+   .. method:: __init__(seq=(1.0, 0.0, 0.0, 0.0), angle=0.0)
+
+      :type seq: :class:`Vector`
+      :type angle: float
 
    .. method:: __get__(instance, owner)
 
@@ -274,7 +284,7 @@
 
       :type key: slice
       :mod-option arg key: skip-refine
-      :type value: collections.abc.Iterable[float]
+      :type value: collections.abc.Iterable[float] | :class:`Quaternion`
       :mod-option arg value: skip-refine
       :option function: overload
 
@@ -329,6 +339,8 @@
 
    .. method:: __init__(seq=(0.0, 0.0, 0.0))
 
+      :type seq: Sequence[float]
+
    .. method:: __get__(instance, owner)
 
       :rtype: :class:`Vector`
@@ -365,7 +377,7 @@
 
       :type key: slice
       :mod-option arg key: skip-refine
-      :type value: collections.abc.Iterable[float]
+      :type value: collections.abc.Iterable[float] | :class:`Vector`
       :mod-option arg value: skip-refine
       :option function: overload
 

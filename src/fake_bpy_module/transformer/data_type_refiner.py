@@ -32,6 +32,8 @@ from fake_bpy_module.utils import (
     find_children,
     get_first_child,
     output_log,
+    split_string_by_bar,
+    split_string_by_comma,
 )
 
 from .transformer_base import TransformerBase
@@ -71,17 +73,21 @@ REGEX_MATCH_DATA_TYPE_LIST_OR_DICT_OR_SET_OR_TUPLE = re.compile(r"^`*(list|dict|
 REGEX_MATCH_DATA_TYPE_OT = re.compile(r"^`([A-Z]+)_OT_([A-Za-z_]+)`$")
 REGEX_MATCH_DATA_TYPE_DOT = re.compile(r"^`([a-zA-Z0-9_]+\.[a-zA-Z0-9_.]+)`$")
 REGEX_MATCH_DATA_TYPE_DOT_COMMA = re.compile(r"^`([a-zA-Z0-9_.]+)`(,)*$")
-REGEX_MATCH_DATA_TYPE_START_AND_END_WITH_PARENTHESES = re.compile(r"^\(([a-zA-Z0-9_.,` ]+)\)$")     # noqa: E501
 REGEX_MATCH_DATA_TYPE_NAME = re.compile(r"^[a-zA-Z0-9_.]+$")
 # pylint: enable=line-too-long
 
 REGEX_MATCH_DESCRIPTION_TYPE_IN = re.compile(r"type in `(.*)`")
 REGEX_MATCH_DESCRIPTION_ENUMERATOR_IN = re.compile(r"^Enumerator in `(.*)`")
 
+# pylint: disable=C0301
 _REGEX_DATA_TYPE_OPTION_STR = re.compile(r"\(([a-zA-Z, ]+?)\)$")
 _REGEX_DATA_TYPE_OPTION_END_WITH_NONE = re.compile(r"or None$")
 _REGEX_DATA_TYPE_OPTION_OPTIONAL = re.compile(r"(^|^An |\()[oO]ptional(\s|\))")
 _REGEX_DATA_TYPE_STARTS_WITH_COLLECTION = re.compile(r"^(list|tuple|dict)")
+_REGEX_DATA_TYPE_MODIFIER_TYPES = re.compile(r"^(Sequence|Callable|list|dict|tuple|type)?\[(.+)\]$")  # noqa: E501
+_REGEX_DATA_TYPE_START_AND_END_WITH_PARENTHESES = re.compile(r"^\((.+)\)$")
+
+REGEX_SPLIT_OR = re.compile(r" \| | or |,")
 
 
 def snake_to_camel(name: str) -> str:
@@ -197,6 +203,9 @@ class DataTypeRefiner(TransformerBase):
             if s:
                 return [make_data_type_node(f"`{s}`")]
 
+        if dtype_str == "...":
+            return [make_data_type_node("...")]
+
         if dtype_str in ("type", "object", "function"):
             return [make_data_type_node("typing.Any")]
 
@@ -206,7 +215,10 @@ class DataTypeRefiner(TransformerBase):
         if dtype_str.startswith("`AnyType`"):
             return [make_data_type_node("typing.Any")]
 
-        if dtype_str in ("any", "Any type."):
+        if dtype_str == "None":
+            return [make_data_type_node("None")]
+
+        if dtype_str in ("any", "Any", "Any type."):
             return [make_data_type_node("typing.Any")]
 
         if dtype_str[1:].lower() == "d vector":
@@ -260,7 +272,7 @@ class DataTypeRefiner(TransformerBase):
             dtype_node = DataTypeNode()
             append_child(dtype_node, nodes.Text("set["))
             append_child(dtype_node,
-                         EnumRef(text=f"bpy.typing.{enum_literal_type}"))
+                         EnumRef(text=f"bpy._typing.rna_enums.{enum_literal_type}"))
             append_child(dtype_node, nodes.Text("]"))
             return [dtype_node]
 
@@ -269,7 +281,7 @@ class DataTypeRefiner(TransformerBase):
             enum_literal_type = get_rna_enum_name(dtype_str)
             dtype_node = DataTypeNode()
             append_child(dtype_node,
-                         EnumRef(text=f"bpy.typing.{enum_literal_type}"))
+                         EnumRef(text=f"bpy._typing.rna_enums.{enum_literal_type}"))
             return [dtype_node]
 
         # [Ex] Enumerated constant
@@ -359,8 +371,8 @@ class DataTypeRefiner(TransformerBase):
         if m := REGEX_MATCH_DATA_TYPE_FLOAT_MULTI_DIMENSIONAL_ARRAY_OF.match(
                 dtype_str):
             tuple_elems = [
-                f"tuple[{', '.join(['float'] * int(m.group(1)))}]"
-            ] * int(m.group(2))
+                f"tuple[{', '.join(['float'] * int(m.group(2)))}]"
+            ] * int(m.group(1))
             return [
                 make_data_type_node("list[list[float]]"),
                 make_data_type_node(f"tuple[{', '.join(tuple_elems)}]")
@@ -492,23 +504,6 @@ class DataTypeRefiner(TransformerBase):
                 m.group(1), uniq_full_names, uniq_module_names, module_name)
             if s:
                 return [make_data_type_node(f"tuple[`{s}`, ...]")]
-
-        # [Ex] (Vector, Quaternion, Vector)  # noqa: ERA001
-        if m1 := REGEX_MATCH_DATA_TYPE_START_AND_END_WITH_PARENTHESES.match(
-                dtype_str):
-            splited = m1.group(1).split(",")
-            dtypes = []
-            for raw_sp in splited:
-                sp = raw_sp.strip()
-                if m2 := REGEX_MATCH_DATA_TYPE_DOT_COMMA.match(sp):
-                    s = self._parse_custom_data_type(
-                        m2.group(1), uniq_full_names, uniq_module_names,
-                        module_name)
-                    if s:
-                        dtypes.append(f"`{s}`")
-            if len(dtypes) != 0:
-                elem_str = ", ".join(dtypes)
-                return [make_data_type_node(f"tuple[{elem_str}]")]
 
         if dtype_str == "dict with string keys":
             return [make_data_type_node("dict[str, typing.Any]")]
@@ -702,11 +697,9 @@ class DataTypeRefiner(TransformerBase):
                 if _REGEX_DATA_TYPE_STARTS_WITH_COLLECTION.match(r.to_string()):
                     option_results.append("never none")
 
-            # If data type is bpy.types.Context, it will accept None.
+            # If data type is bpy.types.Context, it will be never None.
             if r.to_string() == "bpy.types.Context":
-                while "never none" in option_results:
-                    option_results.remove("never none")
-                option_results.append("accept none")
+                option_results.append("never none")
 
             if variable_kind == 'CLS_ATTR':
                 if is_cls_attr_in_never_none_blacklist(
@@ -724,7 +717,7 @@ class DataTypeRefiner(TransformerBase):
 
         return result
 
-    def _get_refined_data_type_internal(
+    def _get_refined_data_type_splited(
         self, dtype_str: str, module_name: str,
         variable_kind: str, additional_info: dict[str, Any] | None = None
     ) -> list[DataTypeNode]:
@@ -733,6 +726,51 @@ class DataTypeRefiner(TransformerBase):
 
         uniq_full_names = self._entry_points_cache["uniq_full_names"]
         uniq_module_names = self._entry_points_cache["uniq_module_names"]
+
+        def parse_multiple_data_type_elements(
+                elements_str: str, modifier: str) -> list[DataTypeNode]:
+            elements = split_string_by_comma(elements_str, False)
+            elm_dtype_nodes: list[list[DataTypeNode]] = []
+            for elm in elements:
+                dtype_nodes = self._get_refined_data_type_internal(
+                    elm, module_name, variable_kind, additional_info)
+                if len(dtype_nodes) >= 1:
+                    elm_dtype_nodes.append(dtype_nodes)
+
+            new_dtype_node = DataTypeNode()
+            if len(elm_dtype_nodes) >= 1:
+                append_child(new_dtype_node, nodes.Text(f"{modifier}["))
+                for i, dtype_nodes in enumerate(elm_dtype_nodes):
+                    for j, dtype_node in enumerate(dtype_nodes):
+                        for child in dtype_node.children:
+                            append_child(new_dtype_node, child)
+                        if j != len(dtype_nodes) - 1:
+                            append_child(new_dtype_node, nodes.Text(" | "))
+                    if i != len(elm_dtype_nodes) - 1:
+                        append_child(new_dtype_node, nodes.Text(", "))
+                append_child(new_dtype_node, nodes.Text("]"))
+            else:
+                append_child(new_dtype_node, nodes.Text(modifier))
+            return [new_dtype_node]
+
+        # [Ex] (Vector, Quaternion, Vector)  # noqa: ERA001
+        if m := _REGEX_DATA_TYPE_START_AND_END_WITH_PARENTHESES.match(
+                dtype_str):
+            return parse_multiple_data_type_elements(m.group(1), "tuple")
+
+        # Handle Python typing syntax.
+        if m := _REGEX_DATA_TYPE_MODIFIER_TYPES.match(dtype_str):
+            pydoc_to_typing_annotation = {
+                "Sequence": "collections.abc.Sequence",
+                "Callable": "collections.abc.Callable",
+            }
+
+            modifier = m.group(1)
+            if modifier is None:
+                modifier = ""
+            modifier = pydoc_to_typing_annotation.get(modifier, modifier)
+
+            return parse_multiple_data_type_elements(m.group(2), modifier)
 
         # Ex. string, default "", -> string
         if m := REGEX_MATCH_DATA_TYPE_WITH_DEFAULT.match(dtype_str):
@@ -758,11 +796,8 @@ class DataTypeRefiner(TransformerBase):
         if result is not None:
             return result
 
-        if ("," in dtype_str) or (" or " in dtype_str):
-            sp = dtype_str.split(",")
-            splist = []
-            for s in sp:
-                splist.extend(s.split(" or "))
+        if any(keyword in dtype_str for keyword in [" | ", " or ", ","]):
+            splist = REGEX_SPLIT_OR.split(dtype_str)
 
             output_log(LOG_LEVEL_DEBUG, f"Split data type refining: {splist}")
 
@@ -776,6 +811,26 @@ class DataTypeRefiner(TransformerBase):
                     dtypes.extend(result)
             return dtypes
         return []
+
+    def _get_refined_data_type_internal(
+        self, dtype_str: str, module_name: str,
+        variable_kind: str, additional_info: dict[str, Any] | None = None
+    ) -> list[DataTypeNode]:
+
+        dtype_str = dtype_str.strip()
+        dtype_str = dtype_str.replace("\n", " ")
+
+        dtype_strs_splited = split_string_by_bar(dtype_str)
+        if len(dtype_strs_splited) == 0:
+            return [make_data_type_node("typing.Any")]
+
+        dtype_nodes = []
+        for ds in dtype_strs_splited:
+            dtypes = self._get_refined_data_type_splited(
+                ds, module_name, variable_kind, additional_info)
+            dtype_nodes.extend(dtypes)
+
+        return dtype_nodes
 
     def _parse_from_description(
         self, module_name: str, dtype_nodes: list[DataTypeNode],
@@ -799,7 +854,7 @@ class DataTypeRefiner(TransformerBase):
                 REGEX_MATCH_DESCRIPTION_TYPE_IN.search(description_str):
             is_set = False
             for dtype_node in dtype_nodes:
-                if dtype_node.to_string() == "set":
+                if dtype_node.to_string() in ("set", "set[str]"):
                     is_set = True
                     break
 
@@ -808,14 +863,14 @@ class DataTypeRefiner(TransformerBase):
                 dtype_node = DataTypeNode()
                 append_child(dtype_node, nodes.Text("set["))
                 append_child(dtype_node,
-                             EnumRef(text=f"bpy.typing.{enum_literal_type}"))
+                             EnumRef(text=f"bpy._typing.rna_enums.{enum_literal_type}"))
                 append_child(dtype_node, nodes.Text("]"))
                 return [dtype_node], True
 
             enum_literal_type = get_rna_enum_name(description_str)
             dtype_node = DataTypeNode()
             append_child(dtype_node,
-                         EnumRef(text=f"bpy.typing.{enum_literal_type}"))
+                         EnumRef(text=f"bpy._typing.rna_enums.{enum_literal_type}"))
             return [dtype_node], True
 
         return [], False

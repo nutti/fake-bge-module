@@ -59,7 +59,7 @@ jobs:
             "2.80", "2.81", "2.82", "2.83",
             "2.90", "2.91", "2.92", "2.93",
             "3.0", "3.1", "3.2", "3.3", "3.4", "3.5", "3.6",
-            "4.0", "4.1", "4.2"
+            "4.0", "4.1", "4.2", "4.3"
           ]
     steps:
       - name: Checkout repo
@@ -125,13 +125,13 @@ jobs:
         run: bash tools/pip_package/build_pip_package.sh blender ${{ matrix.blender_version }} ./blender ./blender-bin/blender-v${{ matrix.blender_version }}-bin ${{ matrix.blender_version }}
 
       - name: Archive pip packages
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: fake_bpy_modules_${{ matrix.blender_version}}_pip_${{ needs.set_versions.outputs.file_version }}
           path: release
 
       - name: Archive raw modules
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: fake_bpy_modules_${{ matrix.blender_version}}_raw_${{ needs.set_versions.outputs.file_version }}
           path: "raw_modules/fake_bpy_module*"
@@ -158,7 +158,7 @@ jobs:
 
       - name: Store failure state
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: failure_state_${{ matrix.blender_version}}
           path: /tmp/failure_state_${{ matrix.blender_version}}
@@ -179,11 +179,11 @@ jobs:
             "2.80", "2.81", "2.82", "2.83",
             "2.90", "2.91", "2.92", "2.93",
             "3.0", "3.1", "3.2", "3.3", "3.4", "3.5", "3.6",
-            "4.0", "4.1", "4.2"
+            "4.0", "4.1", "4.2", "4.3"
           ]
     steps:
       - name: Fetch artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: dist
 
@@ -211,11 +211,11 @@ jobs:
             "2.80", "2.81", "2.82", "2.83",
             "2.90", "2.91", "2.92", "2.93",
             "3.0", "3.1", "3.2", "3.3", "3.4", "3.5", "3.6",
-            "4.0", "4.1", "4.2"
+            "4.0", "4.1", "4.2", "4.3"
           ]
     steps:
       - name: Fetch Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: dist
 
@@ -241,11 +241,11 @@ jobs:
             "2.80", "2.81", "2.82", "2.83",
             "2.90", "2.91", "2.92", "2.93",
             "3.0", "3.1", "3.2", "3.3", "3.4", "3.5", "3.6",
-            "4.0", "4.1", "4.2"
+            "4.0", "4.1", "4.2", "4.3"
           ]
     steps:
       - name: Fetch Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: dist
 
