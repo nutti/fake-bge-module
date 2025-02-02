@@ -15,7 +15,8 @@ API modules for the code completion in commonly used IDEs.
 
 ## Requirements
 
-fake-bpy-module requires Python 3.12.
+fake-bge-module uses typing module and type hints which are available from
+Python 3.8. Check your Python version is >= 3.8.
 
 ## Install
 

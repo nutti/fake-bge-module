@@ -2,7 +2,18 @@
 
 # Change Log
 
-## [Unreleased](https://github.com/nutti/fake-bge-module/compare/20241013...main)
+## [Unreleased](https://github.com/nutti/fake-bge-module/compare/20250202...main)
+
+<!-- markdownlint-disable-next-line MD013 -->
+## [20241013](https://github.com/nutti/fake-bge-module/compare/20241013...20250202) - 2025.2.2
+
+### Notice
+
+From this version, fake-bge-module supports Python 3.8 to 3.11 again.
+
+### Other Updates
+
+* Merge fake-bpy-module update ([20250130](https://github.com/nutti/fake-bpy-module/releases/tag/20250130))
 
 <!-- markdownlint-disable-next-line MD013 -->
 ## [20241013](https://github.com/nutti/fake-bge-module/compare/20231118...20241013) - 2024.10.13
