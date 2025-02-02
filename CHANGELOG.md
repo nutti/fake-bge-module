@@ -5,7 +5,7 @@
 ## [Unreleased](https://github.com/nutti/fake-bge-module/compare/20250202...main)
 
 <!-- markdownlint-disable-next-line MD013 -->
-## [20241013](https://github.com/nutti/fake-bge-module/compare/20241013...20250202) - 2025.2.2
+## [20250202](https://github.com/nutti/fake-bge-module/compare/20241013...20250202) - 2025.2.2
 
 ### Notice
 
