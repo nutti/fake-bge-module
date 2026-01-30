@@ -1,6 +1,8 @@
 Title
 =====
 
+.. |TEST_REPLACEMENT| replace:: Test replacement text.
+
 Paragraph: *Emphasis*
 
 * Bullet List Item 1
@@ -52,6 +54,10 @@ Function: :func:`function_ref`, Data: :data:`data_ref`, Const: :const:`const_ref
 .. note::
 
    Note Contents
+
+.. important::
+
+   Important Contents
 
 .. warning::
 

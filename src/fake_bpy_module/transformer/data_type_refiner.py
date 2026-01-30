@@ -1,5 +1,5 @@
 import re
-from typing import Any, Self
+from typing import Any
 
 from docutils import nodes
 
@@ -45,6 +45,7 @@ REGEX_MATCH_DATA_TYPE_WITH_DEFAULT = re.compile(r"(.*), default ([0-9a-zA-Z\"]+)
 REGEX_MATCH_DATA_TYPE_SPACE = re.compile(r"^\s*$")
 REGEX_MATCH_DATA_TYPE_ENUM_IN_DEFAULT = re.compile(r"^enum in \[(.*)\], default (.+)$")  # noqa: E501
 REGEX_MATCH_DATA_TYPE_ENUM_IN = re.compile(r"^enum in \[(.*)\](, \(.+\))*$")
+REGEX_MATCH_DATA_TYPE_SET_IN_DEFAULT = re.compile(r"^enum set in \{(.*)\}, default (.+)$")  # noqa: E501
 REGEX_MATCH_DATA_TYPE_SET_IN = re.compile(r"^enum set in \{(.*)\}(, \(.+\))*$")
 REGEX_MATCH_DATA_TYPE_SET_IN_RNA = re.compile(r"^enum set in `(.*)`(, \(.+\))*$")  # noqa: E501
 REGEX_MATCH_DATA_TYPE_BOOLEAN_DEFAULT = re.compile(r"^boolean, default (False|True)$")  # noqa: E501
@@ -84,7 +85,8 @@ _REGEX_DATA_TYPE_OPTION_STR = re.compile(r"\(([a-zA-Z, ]+?)\)$")
 _REGEX_DATA_TYPE_OPTION_END_WITH_NONE = re.compile(r"or None$")
 _REGEX_DATA_TYPE_OPTION_OPTIONAL = re.compile(r"(^|^An |\()[oO]ptional(\s|\))")
 _REGEX_DATA_TYPE_STARTS_WITH_COLLECTION = re.compile(r"^(list|tuple|dict)")
-_REGEX_DATA_TYPE_MODIFIER_TYPES = re.compile(r"^(Sequence|Callable|list|dict|tuple|type)?\[(.+)\]$")  # noqa: E501
+_REGEX_DATA_TYPE_MODIFIER_TYPES = re.compile(r"^(Iterable|Sequence|Callable|list|dict|tuple|type|set)?\[(.+)\]$")  # noqa: E501
+_REGEX_DATA_TYPE_LITERALS_TYPE = re.compile(r"^Literal\[(.+)\]$")
 _REGEX_DATA_TYPE_START_AND_END_WITH_PARENTHESES = re.compile(r"^\((.+)\)$")
 
 REGEX_SPLIT_OR = re.compile(r" \| | or |,")
@@ -256,6 +258,16 @@ class DataTypeRefiner(TransformerBase):
             )
             return [make_data_type_node(f"typing.Literal[{enum_values}]")]
 
+        # [Ex] enum set in {'SEPARATE'}, default {}
+        if REGEX_MATCH_DATA_TYPE_SET_IN_DEFAULT.match(dtype_str):
+            enum_values = ",".join(
+                v.strip()
+                for v in dtype_str.split("{")[1].split("}")[0].split(",")
+            )
+            if enum_values == "":
+                return [make_data_type_node("set[str]")]
+            return [make_data_type_node(f"set[typing.Literal[{enum_values}]]")]
+
         # [Ex] enum set in {'KEYMAP_FALLBACK'}, (optional)
         if REGEX_MATCH_DATA_TYPE_SET_IN.match(dtype_str):
             if "{}" in dtype_str:
@@ -272,7 +284,7 @@ class DataTypeRefiner(TransformerBase):
             dtype_node = DataTypeNode()
             append_child(dtype_node, nodes.Text("set["))
             append_child(dtype_node,
-                         EnumRef(text=f"bpy._typing.rna_enums.{enum_literal_type}"))
+                         EnumRef(text=f"bpy.stub_internal.rna_enums.{enum_literal_type}"))
             append_child(dtype_node, nodes.Text("]"))
             return [dtype_node]
 
@@ -281,7 +293,7 @@ class DataTypeRefiner(TransformerBase):
             enum_literal_type = get_rna_enum_name(dtype_str)
             dtype_node = DataTypeNode()
             append_child(dtype_node,
-                         EnumRef(text=f"bpy._typing.rna_enums.{enum_literal_type}"))
+                         EnumRef(text=f"bpy.stub_internal.rna_enums.{enum_literal_type}"))
             return [dtype_node]
 
         # [Ex] Enumerated constant
@@ -375,7 +387,8 @@ class DataTypeRefiner(TransformerBase):
             ] * int(m.group(1))
             return [
                 make_data_type_node("list[list[float]]"),
-                make_data_type_node(f"tuple[{', '.join(tuple_elems)}]")
+                make_data_type_node(f"tuple[{', '.join(tuple_elems)}]"),
+                make_data_type_node("npt.NDArray"),
             ]
 
         if m := REGEX_MATCH_DATA_TYPE_MATHUTILS_MATRIX_OF.match(dtype_str):
@@ -606,10 +619,6 @@ class DataTypeRefiner(TransformerBase):
                                f"{dtype_str} -> {stripped}")
                     dtype_str = stripped
 
-            # If readonly is specified, we should add never none as well.
-            if "readonly" in option_results:
-                option_results.append("never none")
-
             option_results = sorted(set(option_results))
 
             # Active object can accept None.
@@ -677,12 +686,19 @@ class DataTypeRefiner(TransformerBase):
             dtype_str_changed, module_name, variable_kind,
             additional_info=additional_info)
 
-        def is_cls_attr_in_never_none_blacklist(
+        def is_cls_attr_in_never_none_whitelist(
                 class_full_name: str, attr_name: str) -> bool:
             blacklist = (
                 "bpy.types.ID.library"
             )
             return f"{class_full_name}.{attr_name}" in blacklist
+
+        def is_func_arg_in_never_none_whitelist(
+                class_full_name: str, func_name: str) -> bool:
+            if class_full_name is not None:
+                if not class_full_name.startswith("bpy.types"):
+                    return False
+            return func_name == "draw_handler_add"
 
         # Add options.
         for r in result:
@@ -702,9 +718,14 @@ class DataTypeRefiner(TransformerBase):
                 option_results.append("never none")
 
             if variable_kind == 'CLS_ATTR':
-                if is_cls_attr_in_never_none_blacklist(
+                if is_cls_attr_in_never_none_whitelist(
                         additional_info["self_class"],
                         additional_info["data_name"]):
+                    option_results.append("never none")
+            elif variable_kind == 'FUNC_ARG':
+                if is_func_arg_in_never_none_whitelist(
+                        additional_info.get("self_class"),
+                        additional_info["func_name"]):
                     option_results.append("never none")
 
             option_results = sorted(set(option_results))
@@ -761,6 +782,7 @@ class DataTypeRefiner(TransformerBase):
         # Handle Python typing syntax.
         if m := _REGEX_DATA_TYPE_MODIFIER_TYPES.match(dtype_str):
             pydoc_to_typing_annotation = {
+                "Iterable": "collections.abc.Iterable",
                 "Sequence": "collections.abc.Sequence",
                 "Callable": "collections.abc.Callable",
             }
@@ -771,6 +793,12 @@ class DataTypeRefiner(TransformerBase):
             modifier = pydoc_to_typing_annotation.get(modifier, modifier)
 
             return parse_multiple_data_type_elements(m.group(2), modifier)
+
+        if m := _REGEX_DATA_TYPE_LITERALS_TYPE.match(dtype_str):
+            new_dtype_node = DataTypeNode()
+            text = nodes.Text(f"typing.Literal[{m.group(1)}]")
+            append_child(new_dtype_node, text)
+            return [new_dtype_node]
 
         # Ex. string, default "", -> string
         if m := REGEX_MATCH_DATA_TYPE_WITH_DEFAULT.match(dtype_str):
@@ -863,14 +891,14 @@ class DataTypeRefiner(TransformerBase):
                 dtype_node = DataTypeNode()
                 append_child(dtype_node, nodes.Text("set["))
                 append_child(dtype_node,
-                             EnumRef(text=f"bpy._typing.rna_enums.{enum_literal_type}"))
+                             EnumRef(text=f"bpy.stub_internal.rna_enums.{enum_literal_type}"))
                 append_child(dtype_node, nodes.Text("]"))
                 return [dtype_node], True
 
             enum_literal_type = get_rna_enum_name(description_str)
             dtype_node = DataTypeNode()
             append_child(dtype_node,
-                         EnumRef(text=f"bpy._typing.rna_enums.{enum_literal_type}"))
+                         EnumRef(text=f"bpy.stub_internal.rna_enums.{enum_literal_type}"))
             return [dtype_node], True
 
         return [], False
@@ -951,9 +979,11 @@ class DataTypeRefiner(TransformerBase):
             func_list_node = class_node.element(FunctionListNode)
             func_nodes = find_children(func_list_node, FunctionNode)
             for func_node in func_nodes:
+                func_name = func_node.element(NameNode).astext()
                 arg_list_node = func_node.element(ArgumentListNode)
                 arg_nodes = find_children(arg_list_node, ArgumentNode)
                 for arg_node in arg_nodes:
+                    arg_name = arg_node.element(NameNode).astext()
                     description = arg_node.element(DescriptionNode).astext()
                     default_value_node = arg_node.element(DefaultValueNode)
                     dtype_list_node = arg_node.element(DataTypeListNode)
@@ -961,6 +991,8 @@ class DataTypeRefiner(TransformerBase):
                            description_str=description,
                            additional_info={
                                "self_class": f"{module_name}.{class_name}",
+                               "func_name": func_name,
+                               "arg_name": arg_name,
                                "default_value": default_value_node.astext(),
                            })
 
@@ -993,15 +1025,19 @@ class DataTypeRefiner(TransformerBase):
 
         func_nodes = find_children(document, FunctionNode)
         for func_node in func_nodes:
+            func_name = func_node.element(NameNode).astext()
             arg_list_node = func_node.element(ArgumentListNode)
             arg_nodes = find_children(arg_list_node, ArgumentNode)
             for arg_node in arg_nodes:
+                arg_name = arg_node.element(NameNode).astext()
                 description = arg_node.element(DescriptionNode).astext()
                 default_value_node = arg_node.element(DefaultValueNode)
                 dtype_list_node = arg_node.element(DataTypeListNode)
                 refine(dtype_list_node, module_name, 'FUNC_ARG',
                        description_str=description,
                        additional_info={
+                           "func_name": func_name,
+                           "arg_name": arg_name,
                            "default_value": default_value_node.astext(),
                        })
 
@@ -1017,7 +1053,7 @@ class DataTypeRefiner(TransformerBase):
                    additional_info={"data_name": f"{data_name}"})
 
     @classmethod
-    def name(cls: type[Self]) -> str:
+    def name(cls) -> str:
         return "data_type_refiner"
 
     def apply(self, **kwargs: dict) -> None:  # noqa: ARG002

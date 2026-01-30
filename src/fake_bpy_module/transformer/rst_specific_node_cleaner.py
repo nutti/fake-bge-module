@@ -1,5 +1,3 @@
-from typing import Self
-
 from docutils import nodes
 
 from fake_bpy_module.analyzer.nodes import CodeDocumentNode, CodeNode
@@ -32,13 +30,14 @@ class RstSpecificNodeCleaner(TransformerBase):
                     nodes.enumerated_list | nodes.definition_list |
                     nodes.block_quote | nodes.line_block | nodes.literal_block |
                     nodes.section | nodes.field_list | nodes.note |
-                    nodes.warning | nodes.target | CodeNode):
+                    nodes.important | nodes.warning | nodes.target |
+                    nodes.substitution_definition | CodeNode):
                 code_doc_node = CodeDocumentNode()
                 self._replace(node, code_doc_node)
                 append_child(code_doc_node, node)
 
     @classmethod
-    def name(cls: type[Self]) -> str:
+    def name(cls) -> str:
         return "rst_specific_node_cleaner"
 
     def apply(self, **kwargs: dict) -> None:  # noqa: ARG002

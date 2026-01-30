@@ -13,8 +13,8 @@ You can choose the method to generate modules.
 
 ### Python Version
 
-The generating script can be run on Python >= 3.12.
-Check your Python version is >= 3.12.
+The generating script can be run on Python >= 3.11.
+Check your Python version is >= 3.11.
 
 ### Install requirement packages
 
@@ -42,9 +42,9 @@ pip install -r src/requirements.txt
 
 After generating modules, you need to setup IDE to enable a code completion.
 
-* [PyCharm](docs/setup_pycharm.md)
-* [Visual Studio Code](docs/setup_visual_studio_code.md)
-* [All Text Editor (Install as Python module)](docs/setup_all_text_editor.md)
+* [PyCharm](setup_pycharm.md)
+* [Visual Studio Code](setup_visual_studio_code.md)
+* [All Text Editor (Install as Python module)](setup_all_text_editor.md)
 
 ## Case 1: Use utility script
 
@@ -126,7 +126,7 @@ environment variable.
 
 <!-- markdownlint-disable MD013 -->
 ```bash
-PYTHON_BIN=/path/to/python3.12 bash gen_module.sh <source-dir> <blender-dir> <target> <branch/tag/commit> <target-version> <output-dir> [<mod-version>]
+PYTHON_BIN=/path/to/python3.11 bash gen_module.sh <source-dir> <blender-dir> <target> <branch/tag/commit> <target-version> <output-dir> [<mod-version>]
 ```
 <!-- markdownlint-enable MD013 -->
 
@@ -268,7 +268,7 @@ bash tools/gen_module/run_gen_module_in_docker.sh <blender-version>
 ### Results
 
 | Directory | Contents |
-|----|----|
+| ---- | ---- |
 | `build/blender-bin` | Blender/UPBGE binaries |
 | `build/blender-src` | Blender/UPBGE source code |
 | `build/examples` | Blender/UPBGE Python API sample code |

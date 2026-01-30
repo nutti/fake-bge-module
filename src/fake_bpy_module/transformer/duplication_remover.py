@@ -1,5 +1,3 @@
-from typing import Self
-
 from docutils import nodes
 
 from fake_bpy_module.analyzer.nodes import (
@@ -172,6 +170,7 @@ class DuplicationRemover(TransformerBase):
                 else:
                     class_name_to_nodes[class_name].append(class_node)
 
+        class_nodes_to_remove = list(set(class_nodes_to_remove))
         for class_node in class_nodes_to_remove:
             document.remove(class_node)
 
@@ -229,7 +228,7 @@ class DuplicationRemover(TransformerBase):
         self._remove_duplicated_data(document)
 
     @classmethod
-    def name(cls: type[Self]) -> str:
+    def name(cls) -> str:
         return "duplication_remover"
 
     def apply(self, **kwargs: dict) -> None:  # noqa: ARG002

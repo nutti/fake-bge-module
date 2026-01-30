@@ -1,5 +1,3 @@
-from typing import Self
-
 from docutils import nodes
 
 from fake_bpy_module.analyzer.nodes import (
@@ -91,9 +89,11 @@ class FormatValidator(TransformerBase):
 
     def _check_data_type_node(self, data_type_node: DataTypeNode) -> None:
         for child in data_type_node.children:
-            assert isinstance(child, nodes.Text | ModuleRef | ClassRef |
-                              RefRef | nodes.literal | nodes.emphasis |
-                              nodes.title_reference), f"{child.pformat()}"
+            assert isinstance(child, nodes.Text | nodes.reference |
+                              nodes.literal | nodes.emphasis |
+                              nodes.title_reference | nodes.target |
+                              ModuleRef | ClassRef |
+                              RefRef), f"{child.pformat()}"
 
             if isinstance(child, nodes.Text | nodes.literal | nodes.emphasis |
                           nodes.title_reference):
@@ -255,7 +255,7 @@ class FormatValidator(TransformerBase):
         self._check_document(document)
 
     @classmethod
-    def name(cls: type[Self]) -> str:
+    def name(cls) -> str:
         return "format_validator"
 
     def apply(self, **kwargs: dict) -> None:  # noqa: ARG002

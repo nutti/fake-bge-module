@@ -10,6 +10,7 @@ from fake_bpy_module.utils import (
     append_child,
     find_children,
     split_string_by_comma,
+    to_version_int,
 )
 
 from .nodes import (
@@ -51,13 +52,14 @@ def parse_function_def(content: str) -> str:
     content.strip()
 
     m = _ARG_LIST_FROM_FUNC_DEF_REGEX.search(content)
+    assert m
     name = m.group(1)
     params = split_string_by_comma(m.group(2))
 
     # (test=DirectivesTest.test_invalid_function_arg_order)
     # Handle case:
     #   function_1(arg_1, arg_2, arg_3='NONE', arg_4=True, arg_5): pass
-    fixed_params = []
+    fixed_params: list[str] = []
     required_named_argument = False
     for param in params:
         p = param.strip()
@@ -66,10 +68,13 @@ def parse_function_def(content: str) -> str:
         if len(sp) == 1:
             if required_named_argument:
                 if p == "*":
+                    # Argument without default values are allowed after *.
                     required_named_argument = False
-                if p.startswith("*"):
+                if p.startswith("*") or p == "/":
+                    # *args, **kwargs, /
                     fixed_params.append(p)
                 else:
+                    # Have to add default value to keep signature valid.
                     fixed_params.append(f"{p}=None")
             else:
                 fixed_params.append(p)
@@ -150,6 +155,12 @@ def parse_func_arg_default_value(expr: ast.expr) -> str | None:
                 return "None"
             raise NotImplementedError(
                 f"{type(operand)} is not supported as an operand of USub")
+        if isinstance(expr.op, ast.UAdd):
+            operand = parse_func_arg_default_value(expr.operand)
+            if isinstance(operand, str):
+                return "None"
+            raise NotImplementedError(
+                f"{type(operand)} is not supported as an operand of UAdd")
         raise NotImplementedError(
             f"{type(expr.op)} is not supported as an UnaryOp")
     if isinstance(expr, ast.BinOp):
@@ -198,16 +209,23 @@ def build_function_node_from_def(fdef: str) -> FunctionNode:
 
     # Get function signature.
     arg_list_node = func_node.element(ArgumentListNode)
-    for i, arg in enumerate(func_def.args.args):
+    arguments = func_def.args
+
+    # Positional args.
+    pos_args = arguments.posonlyargs + arguments.args
+    pos_args_types = ("posonlyarg",) * len(arguments.posonlyargs)
+    pos_args_types += ("arg",) * len(arguments.args)
+    default_start = len(pos_args) - len(arguments.defaults)
+    args_iterator = enumerate(zip(pos_args_types, pos_args, strict=True))
+    for i, (arg_type, arg) in args_iterator:
         # Remove self argument which will be added later.
         if i == 0 and arg.arg == "self":
             continue
-        arg_node = ArgumentNode.create_template(argument_type="arg")
+        arg_node = ArgumentNode.create_template(argument_type=arg_type)
         arg_node.element(NameNode).add_text(arg.arg)
-        default_start = \
-            len(func_def.args.args) - len(func_def.args.defaults)
         if i >= default_start:
-            default = func_def.args.defaults[i - default_start]
+            default = arguments.defaults[i - default_start]
+
             default_value = parse_func_arg_default_value(default)
             if default_value is not None:
                 arg_node.element(DefaultValueNode).add_text(default_value)
@@ -264,18 +282,15 @@ class ModuleDirective(rst.Directive):
         # Get module name.
         module_name = self.arguments[0]
         if config.get_target() == "blender":
-            if config.get_target_version() == "2.90":
+            target_version = config.get_target_version()
+            if target_version == "2.90":
                 if module_name.startswith("bpy.types."):
                     module_name = module_name[:module_name.rfind(".")]
-            elif config.get_target_version() in [
-                    "2.91", "2.92", "2.93",
-                    "3.0", "3.1", "3.2", "3.3", "3.4", "3.5", "3.6",
-                    "4.0", "4.1", "4.2", "4.3",
-                    "latest"]:
+            elif to_version_int(target_version) >= [2, 91]:
                 if module_name == "bpy.data":
                     module_name = "bpy"
         elif config.get_target() == "upbge":
-            if config.get_target_version() in ["0.30", "0.36", "latest"]:
+            if config.get_target_version() != "0.2.5":
                 if module_name == "bpy.data":
                     module_name = "bpy"
         module_node.element(NameNode).add_text(module_name)
@@ -296,8 +311,8 @@ class ClassDirective(rst.Directive):
     has_content = True
 
     _CLASS_NAME_WITH_ARGS_REGEX = re.compile(
-        r"([a-zA-Z0-9_]+)(\([a-zA-Z0-9_,=. ]+\))")
-    _CLASS_NAME_REGEX = re.compile(r"([a-zA-Z0-9_]+)")
+        r"([a-zA-Z0-9_.]+)(\([a-zA-Z0-9_,=. ]+\))")
+    _CLASS_NAME_REGEX = re.compile(r"([a-zA-Z0-9_.]+)")
 
     def run(self) -> list[ClassNode]:
         paragraph_node = nodes.paragraph()
@@ -312,12 +327,12 @@ class ClassDirective(rst.Directive):
         #       __init__ method like __init__(type, buf, elem=None).
         #       We should consider Color(rgb) which will be added by mod file.
         if m := self._CLASS_NAME_WITH_ARGS_REGEX.match(class_name):
-            class_name = m.group(1)
+            class_name = m.group(1).split(".")[-1]
 
         # Get class name.
         # if m := self._CLASS_NAME_WITH_ARGS_REGEX_2.match(class_name):
         if m := self._CLASS_NAME_REGEX.match(class_name):
-            content = m.group(1)
+            content = m.group(1).split(".")[-1]
             class_node.element(NameNode).add_text(content)
 
         # Get all descriptions.
@@ -514,7 +529,7 @@ class FunctionDirective(rst.Directive):
             deprecated_str = func_name[index:]
             func_name = func_name[0:index]
 
-        func_defs = []
+        func_defs: list[str] = []
         fdef_str: str = ""
         for fdef in func_name.split("\n"):
             if fdef[-1] == "\\":

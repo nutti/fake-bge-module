@@ -1,5 +1,5 @@
 import abc
-from typing import Self, TypeVar
+from typing import Literal, Self, TypeVar
 
 from docutils import nodes
 
@@ -20,7 +20,7 @@ class NodeBase(nodes.Element):
 class UniqueElementNode(NodeBase):
     # pylint: disable=W1113
     def __init__(self, rawsource: str = "", *children: nodes.Node,
-                 **attributes: dict) -> None:
+                 **attributes: str) -> None:
         super().__init__(rawsource, *children, **attributes)
 
         self.elements = {}
@@ -32,7 +32,7 @@ class UniqueElementNode(NodeBase):
     def element(self, element_type: type[T]) -> T:
         return self.elements[element_type]
 
-    def deepcopy(self) -> type[Self]:
+    def deepcopy(self) -> Self:
         new_obj = super().deepcopy()
         new_obj.elements.clear()
         for child in new_obj.children:
@@ -126,9 +126,9 @@ class DataNode(UniqueElementNode, nodes.Part):
     # pylint: disable=W1113
     @classmethod
     def create_template(
-            cls: type[Self], rawsource: str = "",
-            *children: nodes.Node, **attributes: dict) -> type[Self]:
-        node = DataNode(rawsource, *children, **attributes)
+            cls, rawsource: str = "",
+            *children: nodes.Node, **attributes: str) -> Self:
+        node = cls(rawsource, *children, **attributes)
 
         node.append_child(NameNode())
         node.append_child(DescriptionNode())
@@ -144,9 +144,9 @@ class AttributeNode(DataNode):
     # pylint: disable=W1113
     @classmethod
     def create_template(
-            cls: type[Self], rawsource: str = "",
-            *children: nodes.Node, **attributes: dict) -> type[Self]:
-        node = AttributeNode(rawsource, *children, **attributes)
+            cls, rawsource: str = "",
+            *children: nodes.Node, **attributes: str) -> Self:
+        node = cls(rawsource, *children, **attributes)
 
         node.append_child(NameNode())
         node.append_child(DescriptionNode())
@@ -171,13 +171,14 @@ class ArgumentListNode(ListNode):
 class ArgumentNode(UniqueElementNode, nodes.Part):
     tagname = "argument"
     child_text_separator = ""
+    ArgumentType = Literal["posonlyarg", "arg", "vararg", "kwonlyarg", "kwarg"]
 
     # pylint: disable=W1113
     @classmethod
     def create_template(
-            cls: type[Self], rawsource: str = "",
-            *children: nodes.Node, **attributes: dict) -> type[Self]:
-        node = ArgumentNode(rawsource, *children, **attributes)
+            cls, rawsource: str = "",
+            *children: nodes.Node, **attributes: str) -> Self:
+        node = cls(rawsource, *children, **attributes)
 
         node.append_child(NameNode())
         node.append_child(DescriptionNode())
@@ -194,9 +195,9 @@ class FunctionReturnNode(UniqueElementNode, nodes.Part):
     # pylint: disable=W1113
     @classmethod
     def create_template(
-            cls: type[Self], rawsource: str = "",
-            *children: nodes.Node, **attributes: dict) -> type[Self]:
-        node = FunctionReturnNode(rawsource, *children, **attributes)
+            cls, rawsource: str = "",
+            *children: nodes.Node, **attributes: str) -> Self:
+        node = cls(rawsource, *children, **attributes)
 
         node.append_child(DescriptionNode())
         node.append_child(DataTypeListNode())
@@ -214,9 +215,9 @@ class FunctionNode(UniqueElementNode, nodes.Part):
     # pylint: disable=W1113
     @classmethod
     def create_template(
-            cls: type[Self], rawsource: str = "",
-            *children: nodes.Node, **attributes: dict) -> type[Self]:
-        node = FunctionNode(rawsource, *children, **attributes)
+            cls, rawsource: str = "",
+            *children: nodes.Node, **attributes: str) -> Self:
+        node = cls(rawsource, *children, **attributes)
 
         node.append_child(NameNode())
         node.append_child(DescriptionNode())
@@ -238,9 +239,9 @@ class BaseClassNode(UniqueElementNode, nodes.Part):
     # pylint: disable=W1113
     @classmethod
     def create_template(
-            cls: type[Self], rawsource: str = "",
-            *children: nodes.Node, **attributes: dict) -> type[Self]:
-        node = BaseClassNode(rawsource, *children, **attributes)
+            cls, rawsource: str = "",
+            *children: nodes.Node, **attributes: str) -> Self:
+        node = cls(rawsource, *children, **attributes)
 
         node.append_child(DataTypeListNode())
 
@@ -254,9 +255,9 @@ class ClassNode(UniqueElementNode, nodes.Part):
     # pylint: disable=W1113
     @classmethod
     def create_template(
-            cls: type[Self], rawsource: str = "",
-            *children: nodes.Node, **attributes: dict) -> type[Self]:
-        node = ClassNode(rawsource, *children, **attributes)
+            cls, rawsource: str = "",
+            *children: nodes.Node, **attributes: str) -> Self:
+        node = cls(rawsource, *children, **attributes)
 
         node.append_child(NameNode())
         node.append_child(DescriptionNode())
@@ -274,9 +275,9 @@ class ModuleNode(UniqueElementNode, nodes.Part):
     # pylint: disable=W1113
     @classmethod
     def create_template(
-            cls: type[Self], rawsource: str = "",
-            *children: nodes.Node, **attributes: dict) -> type[Self]:
-        node = ModuleNode(rawsource, *children, **attributes)
+            cls, rawsource: str = "",
+            *children: nodes.Node, **attributes: str) -> Self:
+        node = cls(rawsource, *children, **attributes)
 
         node.append_child(NameNode())
         node.append_child(DescriptionNode())
@@ -296,9 +297,9 @@ class EnumItemNode(UniqueElementNode, nodes.Part):
     # pylint: disable=W1113
     @classmethod
     def create_template(
-            cls: type[Self], rawsource: str = "",
-            *children: nodes.Node, **attributes: dict) -> type[Self]:
-        node = EnumItemNode(rawsource, *children, **attributes)
+            cls, rawsource: str = "",
+            *children: nodes.Node, **attributes: str) -> Self:
+        node = cls(rawsource, *children, **attributes)
 
         node.append_child(NameNode())
         node.append_child(DescriptionNode())
@@ -318,9 +319,9 @@ class EnumNode(UniqueElementNode, nodes.Part):
     # pylint: disable=W1113
     @classmethod
     def create_template(
-            cls: type[Self], rawsource: str = "",
-            *children: nodes.Node, **attributes: dict) -> type[Self]:
-        node = EnumNode(rawsource, *children, **attributes)
+            cls, rawsource: str = "",
+            *children: nodes.Node, **attributes: str) -> Self:
+        node = cls(rawsource, *children, **attributes)
 
         node.append_child(NameNode())
         node.append_child(DescriptionNode())

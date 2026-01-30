@@ -1,5 +1,3 @@
-from typing import Self
-
 from docutils import nodes
 
 from fake_bpy_module.analyzer.nodes import (
@@ -24,7 +22,7 @@ def to_camel(name: str) -> str:
 
 class RnaEnumConverter(TransformerBase):
     @classmethod
-    def name(cls: type[Self]) -> str:
+    def name(cls) -> str:
         return "rna_enum_converter"
 
     def _apply(self, document: nodes.document) -> None:
@@ -46,7 +44,7 @@ class RnaEnumConverter(TransformerBase):
         document.append(source_file_node)
 
         module_node = ModuleNode.create_template()
-        module_node.element(NameNode).add_text("bpy._typing.rna_enums")
+        module_node.element(NameNode).add_text("bpy.stub_internal.rna_enums")
         document.append(module_node)
 
         enum_node = EnumNode.create_template()

@@ -10,6 +10,7 @@ from fake_bpy_module.analyzer.roles import (
     ModuleRef,
     RefRef,
 )
+from fake_bpy_module.utils import LOG_LEVEL_WARN, output_log
 
 from .code_writer import (
     CodeWriter,
@@ -57,6 +58,24 @@ class CodeDocumentNodeTranslator(nodes.SparseNodeVisitor):
         self.doc_writer.addln("--------------------")
         self.doc_writer.new_line()
 
+    def visit_substitution_definition(
+        self, node: nodes.substitution_definition
+    ) -> None:
+        name = node.attributes["names"][0]
+        self.doc_writer.add(f"SUBSTITUTION REPLACEMENT '{name}':")
+        self.doc_writer.new_line()
+        output_log(
+            LOG_LEVEL_WARN,
+            f"WARNING. Found substitution definition by name '{name}'. "
+            "It's not fully supported and may be not handled properly."
+        )
+
+    def depart_substitution_definition(
+        self, _: nodes.substitution_definition
+    ) -> None:
+        self.doc_writer.new_line()
+        self.doc_writer.new_line()
+
     def visit_emphasis(self, _: nodes.emphasis) -> None:
         self.doc_writer.add("*")
 
@@ -71,7 +90,7 @@ class CodeDocumentNodeTranslator(nodes.SparseNodeVisitor):
         if len(self.status_stack) >= 1:
             status = self.status_stack[-1]
             if status.kind in ('BULLET_LIST', 'ENUMERATED_LIST', 'NOTE',
-                               'WARNING', 'BLOCK_QUOTE'):
+                               'IMPORTANT', 'WARNING', 'BLOCK_QUOTE'):
                 new_line_num = 1
         else:
             new_line_num = 2
@@ -296,6 +315,16 @@ class CodeDocumentNodeTranslator(nodes.SparseNodeVisitor):
     def depart_note(self, _: nodes.note) -> None:
         status = self.status_stack.pop()
         assert status.kind == 'NOTE'
+
+        self.doc_writer.new_line(1)
+
+    def visit_important(self, _: nodes.important) -> None:
+        self.status_stack.append(Status('IMPORTANT'))
+        self.doc_writer.addln("[IMPORTANT]")
+
+    def depart_important(self, _: nodes.important) -> None:
+        status = self.status_stack.pop()
+        assert status.kind == 'IMPORTANT'
 
         self.doc_writer.new_line(1)
 

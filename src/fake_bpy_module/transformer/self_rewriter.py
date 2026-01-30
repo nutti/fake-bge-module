@@ -1,5 +1,3 @@
-from typing import Self
-
 from docutils import nodes
 
 from fake_bpy_module.analyzer.nodes import (
@@ -23,7 +21,7 @@ from .transformer_base import TransformerBase
 class SelfRewriter(TransformerBase):
 
     @classmethod
-    def name(cls: type[Self]) -> str:
+    def name(cls) -> str:
         return "self_rewriter"
 
     def _replace(self, from_node: nodes.Node, to_node: nodes.Node) -> None:
@@ -64,6 +62,10 @@ class SelfRewriter(TransformerBase):
             attr_list_node = class_node.element(AttributeListNode)
             attr_nodes = find_children(attr_list_node, AttributeNode)
             for attr_node in attr_nodes:
+                attr_name = attr_node.element(NameNode).astext()
+                if attr_name == "parent":
+                    continue
+
                 dtype_list_node = attr_node.element(DataTypeListNode)
                 self._rewrite_dtype_list(class_name, dtype_list_node)
 

@@ -28,13 +28,32 @@
 
       :type: bool
 
+
+.. class:: OperatorProperties
+
+   .. method:: __getattr__(key)
+
+      :type key: str
+      :mod-option arg key: skip-refine
+      :rtype: typing.Any
+      :mod-option rtype: skip-refine
+
+   .. method:: __setattr__(key, value)
+
+      :type key: str
+      :mod-option arg key: skip-refine
+      :type value: typing.Any
+      :mod-option arg value: skip-refine
+      :rtype: None
+      :mod-option rtype: skip-refine
+
 .. class:: bpy_prop_collection
 
    :generic-types: _GenericType1
 
    .. method:: __getitem__(key)
 
-      :type key: int | str
+      :type key: int | str | tuple[str | None]
       :mod-option arg key: skip-refine
       :rtype: _GenericType1
       :mod-option rtype: skip-refine
@@ -44,7 +63,7 @@
 
       :type key: slice
       :mod-option arg key: skip-refine
-      :rtype: list[_GenericType1, ...]
+      :rtype: list[_GenericType1]
       :mod-option rtype: skip-refine
       :option function: overload
 
@@ -88,7 +107,7 @@
 
    .. method:: __contains__(key)
 
-      :type key: str | tuple[str, ...] | _GenericType1
+      :type key: str | tuple[str, str | None] | _GenericType1
       :mod-option arg key: skip-refine
       :rtype: bool
       :mod-option rtype: skip-refine
@@ -115,7 +134,7 @@
 
       :type key: slice
       :mod-option arg key: skip-refine
-      :rtype: list[_GenericType1, ...]
+      :rtype: list[_GenericType1]
       :mod-option rtype: skip-refine
       :option function: overload
 
@@ -164,11 +183,26 @@
       :rtype: bool
       :mod-option rtype: skip-refine
 
-   .. method:: get()
+   .. method:: get(key, default=None)
 
+      :type key: str
+      :option key: never none
+      :mod-option arg key: skip-refine
+      :type default: _GenericType2
+      :mod-option arg default: skip-refine
       :rtype: _GenericType1 | _GenericType2
       :mod-option rtype: skip-refine
       :generic-types: _GenericType2
+
+   .. method:: values()
+
+      :rtype: list[_GenericType1]
+      :mod-option rtype: skip-refine
+
+   .. method:: items()
+
+      :rtype: list[tuple[str, _GenericType1]]
+      :mod-option rtype: skip-refine
 
 .. class:: bpy_struct
 
@@ -217,6 +251,12 @@
 
       :type key: slice
       :mod-option arg key: skip-refine
-      :rtype: list[:class:`Material` | None, ...]
+      :rtype: list[:class:`Material` | None]
+      :mod-option rtype: skip-refine
+      :option function: overload
+
+   .. method:: __iter__()
+
+      :rtype: collections.abc.Iterator[:class:`Material` | None]
       :mod-option rtype: skip-refine
       :option function: overload

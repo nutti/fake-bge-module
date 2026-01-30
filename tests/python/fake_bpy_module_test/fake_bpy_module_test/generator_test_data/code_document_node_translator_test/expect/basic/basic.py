@@ -1,4 +1,7 @@
 """
+SUBSTITUTION REPLACEMENT 'TEST_REPLACEMENT':
+Test replacement text.
+
 Paragraph: *Emphasis*
 
 * Bullet List Item 1
@@ -40,6 +43,9 @@ Function: function_ref, Data: data_ref, Const: const_ref
 [NOTE]
 Note Contents
 
+[IMPORTANT]
+Important Contents
+
 [WARNING]
 Warning Contents
 
@@ -57,3 +63,4 @@ Target
 import typing
 import collections.abc
 import typing_extensions
+import numpy.typing as npt

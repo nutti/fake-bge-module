@@ -3,6 +3,8 @@
         basic.rst
     <title>
         Title
+    <substitution_definition names="TEST_REPLACEMENT">
+        Test replacement text.
     <paragraph>
         Paragraph: 
         <emphasis>
@@ -120,6 +122,9 @@
     <note>
         <paragraph>
             Note Contents
+    <important>
+        <paragraph>
+            Important Contents
     <warning>
         <paragraph>
             Warning Contents

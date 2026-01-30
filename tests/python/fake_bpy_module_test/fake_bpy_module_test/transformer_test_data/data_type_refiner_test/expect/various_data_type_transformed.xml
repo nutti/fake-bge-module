@@ -118,21 +118,63 @@
                     mathutils.Matrix
     <data>
         <name>
-            data_enum_in_default
+            data_enum_in_default_1
         <description>
         <data-type-list>
             <data-type option="never none">
                 typing.Literal['ONE','TWO']
     <data>
         <name>
-            data_enum_in
+            data_enum_in_default_2
         <description>
         <data-type-list>
             <data-type option="never none">
                 typing.Literal['ONE','TWO']
     <data>
         <name>
-            data_set_in
+            data_enum_in_1
+        <description>
+        <data-type-list>
+            <data-type option="never none">
+                typing.Literal['ONE','TWO']
+    <data>
+        <name>
+            data_enum_in_2
+        <description>
+        <data-type-list>
+            <data-type option="never none">
+                typing.Literal['ONE','TWO']
+    <data>
+        <name>
+            data_set_in_default_1
+        <description>
+        <data-type-list>
+            <data-type option="never none">
+                set[typing.Literal['ONE','TWO']]
+    <data>
+        <name>
+            data_set_in_default_2
+        <description>
+        <data-type-list>
+            <data-type option="never none">
+                set[typing.Literal['ONE','TWO']]
+    <data>
+        <name>
+            data_set_in_default_3
+        <description>
+        <data-type-list>
+            <data-type option="never none">
+                set[str]
+    <data>
+        <name>
+            data_set_in_1
+        <description>
+        <data-type-list>
+            <data-type option="never none">
+                set[typing.Literal['ONE','TWO']]
+    <data>
+        <name>
+            data_set_in_2
         <description>
         <data-type-list>
             <data-type option="never none">
@@ -145,7 +187,7 @@
             <data-type option="never none">
                 set[
                 <enum-ref>
-                    bpy._typing.rna_enums.Example
+                    bpy.stub_internal.rna_enums.Example
                 ]
     <data>
         <name>
@@ -154,7 +196,7 @@
         <data-type-list>
             <data-type option="never none">
                 <enum-ref>
-                    bpy._typing.rna_enums.Example
+                    bpy.stub_internal.rna_enums.Example
     <data>
         <name>
             data_enumerated_constant
@@ -331,6 +373,8 @@
                 list[list[float]]
             <data-type option="never none">
                 tuple[tuple[float, float, float], tuple[float, float, float], tuple[float, float, float]]
+            <data-type option="never none">
+                npt.NDArray
     <data>
         <name>
             data_mathutils_matrix_of
@@ -639,3 +683,10 @@
                 <class-ref>
                     module_1.ClassA
                 ]
+    <data>
+        <name>
+            data_dict
+        <description>
+        <data-type-list>
+            <data-type option="never none">
+                dict

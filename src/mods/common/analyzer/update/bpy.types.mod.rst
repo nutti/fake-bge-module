@@ -25,7 +25,7 @@
 
    .. method:: get(key, default=None)
 
-      :type key: str
+      :type key: str | tuple[str, str | None]
       :option key: never none
       :mod-option arg key: skip-refine
       :type default: _GenericType2
@@ -41,14 +41,14 @@
 
       :type attr: str
       :mod-option arg attr: skip-refine
-      :type seq: collections.abc.MutableSequence[bool] | collections.abc.MutableSequence[int] | collections.abc.MutableSequence[float] | typing_extensions.Buffer
+      :type seq: collections.abc.MutableSequence[bool] | collections.abc.MutableSequence[int] | collections.abc.MutableSequence[float] | typing_extensions.Buffer | npt.NDArray
       :mod-option arg seq: skip-refine
 
    .. method:: foreach_set(attr, seq)
 
       :type attr: str
       :mod-option arg attr: skip-refine
-      :type seq: collections.abc.Sequence[bool] | collections.abc.Sequence[int] | collections.abc.Sequence[float] | typing_extensions.Buffer
+      :type seq: collections.abc.Sequence[bool] | collections.abc.Sequence[int] | collections.abc.Sequence[float] | typing_extensions.Buffer | npt.NDArray
       :mod-option arg seq: skip-refine
 
 .. class:: bpy_prop_collection_idprop
@@ -59,45 +59,6 @@
 
       :rtype: _GenericType1
       :mod-option rtype: skip-refine
-
-   .. method:: values()
-
-      :rtype: list[_GenericType1 | None]
-      :mod-option rtype: skip-refine
-
-   .. method:: find(key)
-
-      :type key: str
-      :option key: never none
-      :mod-option arg key: skip-refine
-
-   .. method:: get(key, default=None)
-
-      :type key: str
-      :option key: never none
-      :mod-option arg key: skip-refine
-      :type default: _GenericType2
-      :mod-option arg default: skip-refine
-      :generic-types: _GenericType2
-
-   .. method:: items()
-
-      :rtype: list[tuple[str, _GenericType1]]
-      :mod-option rtype: skip-refine
-
-   .. method:: foreach_get(attr, seq)
-
-      :type attr: str
-      :mod-option arg attr: skip-refine
-      :type seq: collections.abc.MutableSequence[bool] | collections.abc.MutableSequence[int] | collections.abc.MutableSequence[float] | typing_extensions.Buffer
-      :mod-option arg seq: skip-refine
-
-   .. method:: foreach_set(attr, seq)
-
-      :type attr: str
-      :mod-option arg attr: skip-refine
-      :type seq: collections.abc.Sequence[bool] | collections.abc.Sequence[int] | collections.abc.Sequence[float] | typing_extensions.Buffer
-      :mod-option arg seq: skip-refine
 
 .. class:: Depsgraph
 
@@ -211,3 +172,17 @@
 
       :type index: int (never None) 
       :mod-option arg index: update-argument-type
+
+.. class:: Context
+
+   .. method:: temp_override(*, window, area, region, **keywords)
+
+      :rtype: :class:`bpy.types.ContextTempOverride`
+      :mod-option rtype: skip-refine
+
+.. class:: Mesh
+
+   .. method:: from_pydata(vertices, edges, faces, shade_flat)
+
+      :type vertices: collections.abc.Iterable[collections.abc.Sequence[float] | :class:`mathutils.Vector`] | None
+      :mod-option arg vertices: skip-refine

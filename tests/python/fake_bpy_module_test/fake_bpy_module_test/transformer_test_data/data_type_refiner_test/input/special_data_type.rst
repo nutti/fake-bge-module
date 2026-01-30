@@ -24,6 +24,14 @@
 
    :type: Callable[[float, int], tuple[float, int]]
 
+.. data:: data_python_typing_syntax_7
+
+   :type: Literal["OPTION_1", "OPTION_2", "OPTION_3"]
+
+.. data:: data_python_typing_syntax_8
+
+   :type: set[str]
+
 .. data:: data_multiple_lines
 
    :type: type[

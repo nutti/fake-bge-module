@@ -15,49 +15,22 @@ declare -r IGNORED_PYLINT_ERRORS=(
     "E1111" # assignment-from-no-return: Is difficult to handle in fake-module, ignoring for now
 )
 
-declare -r SUPPORTED_BLENDER_VERSIONS=(
-    "2.78" "2.79" "2.80" "2.81" "2.82" "2.83"
-    "2.90" "2.91" "2.92" "2.93"
-    "3.0" "3.1" "3.2" "3.3" "3.4" "3.5" "3.6"
-    "4.0" "4.1" "4.2" "4.3"
-    "latest"
-)
-declare -r SUPPORTED_UPBGE_VERSIONS=(
-    "0.2.5"
-    "0.30" "0.36"
-    "latest"
-)
+# Source the YAML loader
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+VERSIONS_YAML="$REPO_ROOT/src/versions.yml"
+source "$REPO_ROOT/tools/utils/yaml_loader.sh"
 
-declare -A BLENDER_TAG_NAME=(
-    ["v2.78"]="v2.78c"
-    ["v2.79"]="v2.79b"
-    ["v2.80"]="v2.80"
-    ["v2.81"]="v2.81a"
-    ["v2.82"]="v2.82a"
-    ["v2.83"]="v2.83.9"
-    ["v2.90"]="v2.90.0"
-    ["v2.91"]="v2.91.0"
-    ["v2.92"]="v2.92.0"
-    ["v2.93"]="v2.93.0"
-    ["v3.0"]="v3.0.0"
-    ["v3.1"]="v3.1.0"
-    ["v3.2"]="v3.2.0"
-    ["v3.3"]="v3.3.0"
-    ["v3.4"]="v3.4.0"
-    ["v3.5"]="v3.5.0"
-    ["v3.6"]="v3.6.0"
-    ["v4.0"]="v4.0.0"
-    ["v4.1"]="v4.1.0"
-    ["v4.2"]="v4.2.0"
-    ["v4.3"]="v4.3.0"
-    ["vlatest"]="main"
-)
-declare -A UPBGE_TAG_NAME=(
-    ["v0.2.5"]="v0.2.5"
-    ["v0.30"]="v0.30"
-    ["v0.36"]="v0.36"
-    ["vlatest"]="master"
-)
+load_sequence_from_yaml "SUPPORTED_BLENDER_VERSIONS" SUPPORTED_BLENDER_VERSIONS
+readonly SUPPORTED_BLENDER_VERSIONS
+
+load_sequence_from_yaml "SUPPORTED_UPBGE_VERSIONS" SUPPORTED_UPBGE_VERSIONS
+readonly SUPPORTED_UPBGE_VERSIONS
+
+declare -A BLENDER_TAG_NAME
+load_mapping_from_yaml "BLENDER_TAG_NAME"
+
+declare -A UPBGE_TAG_NAME
+load_mapping_from_yaml "UPBGE_TAG_NAME"
 
 target=${1}
 version=${2}
@@ -107,8 +80,8 @@ python_bin=$(command -v "${PYTHON_BIN}")
 
 # check if python version meets our requirements
 IFS=" " read -r -a python_version <<< "$(${python_bin} -c 'import sys; print(sys.version_info[:])' | tr -d '(),')"
-if [ "${python_version[0]}" -lt 3 ] || [[ "${python_version[0]}" -eq 3 && "${python_version[1]}" -lt 12 ]]; then
-    echo "Error: Unsupported Python version \"${python_version[0]}.${python_version[1]}\". Requiring Python 3.12 or higher."
+if [ "${python_version[0]}" -lt 3 ] || [[ "${python_version[0]}" -eq 3 && "${python_version[1]}" -lt 11 ]]; then
+    echo "Error: Unsupported Python version \"${python_version[0]}.${python_version[1]}\". Requiring Python 3.11 or higher."
     exit 1
 fi
 
@@ -170,6 +143,10 @@ function workaround_quirks() {
             sed -i 's/for \(.*\?\) in self\.devices:/for \1 in [self.devices]:/' intern/cycles/blender/addon/properties.py
         fi
 
+        # Supress an error because pylint can not find oslquery package.
+        echo "Supress an import oslquery error"
+        sed -i 's/^\(\s*import oslquery*\)/\1 # pylint: disable=import-error/' intern/cycles/blender/addon/*.py
+
         # pylint does not respect a `hasattr` in `if hasattr(myclass, field) and myclass.field == test`
         echo "Ignoring pylint bug: https://github.com/PyCQA/pylint/issues/801"
         sed -i '/^\s*if hasattr(.*/i # pylint: disable=no-member' intern/cycles/blender/addon/*.py
@@ -182,6 +159,10 @@ function workaround_quirks() {
             echo "Fixing pylint bug: https://github.com/pylint-dev/pylint/issues/3105"
             sed -i 's/for \(.*\?\) in self\.devices:/for \1 in [self.devices]:/' intern/cycles/blender/addon/properties.py
         fi
+
+        # Supress an error because pylint can not find oslquery package.
+        echo "Supress an import oslquery error"
+        sed -i 's/^\(\s*import oslquery*\)/\1 # pylint: disable=import-error/' intern/cycles/blender/addon/*.py
     fi
 }
 
@@ -203,7 +184,11 @@ function run_pylint_test() {
 echo "Creating temporary virtualenv for ${python_bin} at ${temp_venv}"
 ${python_bin} -m venv "${temp_venv}"
 # shellcheck source=/dev/null
-source "${temp_venv}"/bin/activate
+if [[ "$(uname -s)" == MINGW64_NT* ]]; then
+    source "${temp_venv}"/Scripts/activate
+else
+    source "${temp_venv}"/bin/activate
+fi
 
 # install pylint
 pip install --quiet pylint
@@ -215,9 +200,9 @@ pip install numpy
 pushd "${source_dir}"
 
 if [ "${target}" = "blender" ]; then
-    git_tag="${BLENDER_TAG_NAME[v${version}]}"
+    git_tag="${BLENDER_TAG_NAME["${version}"]}"
 elif [ "${target}" = "upbge" ]; then
-    git_tag="${UPBGE_TAG_NAME[v${version}]}"
+    git_tag="${UPBGE_TAG_NAME["${version}"]}"
 fi
 remote_git_ref="$(get_remote_git_ref "${git_tag}")"
 

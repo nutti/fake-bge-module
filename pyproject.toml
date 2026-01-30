@@ -2,8 +2,8 @@
 requires = ["setuptools"]
 
 [project]
-name = "fake-bge-module"
-description = "Collection of the fake Blender Game Engine (BGE) Python API module for the code completion."
+name = "fake-bpy-module"
+description = "Collection of the fake Blender Python API module for the code completion."
 requires-python = ">=3.8"
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -26,12 +26,12 @@ classifiers = [
 dynamic = ["version"]
 
 [project.urls]
-Homepage = "https://github.com/nutti/fake-bge-module"
-Documentation = "https://github.com/nutti/fake-bge-module/blob/main/README.md"
-Source = "https://github.com/nutti/fake-bge-module"
-Download = "https://github.com/nutti/fake-bge-module/releases"
-"Bug Tracker" = "https://github.com/nutti/fake-bge-module/issues"
-"Release Notes" = "https://github.com/nutti/fake-bge-module/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/nutti/fake-bpy-module"
+Documentation = "https://github.com/nutti/fake-bpy-module/blob/main/README.md"
+Source = "https://github.com/nutti/fake-bpy-module"
+Download = "https://github.com/nutti/fake-bpy-module/releases"
+"Bug Tracker" = "https://github.com/nutti/fake-bpy-module/issues"
+"Release Notes" = "https://github.com/nutti/fake-bpy-module/blob/main/CHANGELOG.md"
 
 [tool.setuptools]
 platforms = ["Windows", "Linux", "Mac OS-X"]
@@ -55,6 +55,7 @@ ignore = [
     "UP015",
     "COM812",
     "ANN101",
+    "ANN102",
     "PT009",
     "D100",
     "D101",

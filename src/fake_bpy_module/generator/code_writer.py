@@ -5,6 +5,11 @@ from typing import ClassVar, Self
 
 from yapf.yapflib.yapf_api import FormatCode
 
+from fake_bpy_module.utils import (
+    LOG_LEVEL_ERR,
+    output_log,
+)
+
 
 class CodeWriterIndent:
     indent_stack: ClassVar[list[int]] = [0]
@@ -14,7 +19,7 @@ class CodeWriterIndent:
         self._indent: int = indent
         self._append_current_indent = append_current_indent
 
-    def __enter__(self) -> type[Self]:
+    def __enter__(self) -> Self:
         cls = self.__class__
         cls.add_indent(self._indent, self._append_current_indent)
 
@@ -27,11 +32,11 @@ class CodeWriterIndent:
         cls.remove_indent()
 
     @classmethod
-    def reset_indent(cls: type[Self]) -> None:
+    def reset_indent(cls) -> None:
         cls.indent_stack = [0]
 
     @classmethod
-    def add_indent(cls: type[Self], indent: int = 0,
+    def add_indent(cls, indent: int = 0,
                    append_current_indent: bool = False) -> None:
         if append_current_indent:
             if len(cls.indent_stack) == 0:
@@ -42,11 +47,11 @@ class CodeWriterIndent:
             cls.indent_stack.append(indent)
 
     @classmethod
-    def remove_indent(cls: type[Self]) -> None:
+    def remove_indent(cls) -> None:
         cls.indent_stack.pop()
 
     @classmethod
-    def current_indent(cls: type[Self]) -> int:
+    def current_indent(cls) -> int:
         return cls.indent_stack[-1]
 
 
@@ -106,10 +111,15 @@ class CodeWriter:
                     stderr=subprocess.PIPE
                 ).decode())
             except subprocess.CalledProcessError as e:
-                print("===== Code Data =====")
-                print(self._code_data.getvalue())
-                print("=====================")
-                print(e.stderr)
+                output_log(LOG_LEVEL_ERR, "===== Code Data =====")
+                output_log(LOG_LEVEL_ERR, self._code_data.getvalue())
+                output_log(LOG_LEVEL_ERR, "=====================\n")
+                output_log(LOG_LEVEL_ERR, "===== Code Data with Line =====")
+                sv = self._code_data.getvalue()
+                for i, s in enumerate(sv.splitlines()):
+                    output_log(LOG_LEVEL_ERR, f"L{i}: {s}")
+                output_log(LOG_LEVEL_ERR, "=====================")
+                output_log(LOG_LEVEL_ERR, e.stderr)
                 raise
         elif style_config == "none":
             pass

@@ -48,19 +48,30 @@ import bpy  # pylint: disable=E0401
 EXCLUDE_MODULE_LIST = {
     "bl_i18n_utils.settings_user",
     "bl_i18n_utils.utils_spell_check",
+    # Blender 5.0+.
+    "_bl_i18n_utils.settings_user",
     "bl_app_templates_system.2D_Animation",
     "bl_app_templates_system.Sculpting",
     "bl_app_templates_system.VFX",
     "bl_app_templates_system.Video_Editing",
     "bgui.bgui_utils",
+    "_bpy_internal.http.downloader",
 }
 
 IGNORE_DOC_REGEX_LIST = {
+    # Have unexpected indentation in docstrings that break docutils processing.
+    # Skipping their doc-strings as those methods are not that important.
     re.compile(r"^animsys_refactor.update_data_paths$"),
     re.compile(r"^bl_i18n_utils.utils.I18n.parse_from_po$"),
     re.compile(r"^bl_i18n_utils.utils.I18nMessages.find_best_messages_matches$"),
     re.compile(r"^bl_i18n_utils.utils.I18nMessages.merge$"),
     re.compile(r"^bl_i18n_utils.utils.I18nMessages.parse_messages_from_po$"),
+    # Blender 5.0+.
+    re.compile(r"^_animsys_refactor.update_data_paths$"),
+    re.compile(r"^_bl_i18n_utils.utils.I18n.parse_from_po$"),
+    re.compile(r"^_bl_i18n_utils.utils.I18nMessages.find_best_messages_matches$"),
+    re.compile(r"^_bl_i18n_utils.utils.I18nMessages.merge$"),
+    re.compile(r"^_bl_i18n_utils.utils.I18nMessages.parse_messages_from_po$"),
     re.compile(r"^bpy_extras.wm_utils.progress_report.ProgressReport$"),
     re.compile(r"^bpy_types.RNAMeta$"),
     re.compile(r"^bpy_types.RNAMetaPropGroup$"),
@@ -70,6 +81,9 @@ IGNORE_DOC_REGEX_LIST = {
     re.compile(r"^bl_ui.space_toolsystem_common.*"),
     re.compile(r"^bl_ui.space_toolsystem_toolbar.*"),
     re.compile(r"^progress_report.ProgressReport$"),
+    re.compile(r"^_bpy_internal.grease_pencil.stroke.BezierHandle$"),
+    re.compile(r"^_bpy_types._RNAMeta$"),
+    re.compile(r"^_bpy_types._RNAMetaPropGroup$"),
 }
 
 CLASS_DEFAULT_VALUE_REGEX = re.compile(r"<(.+)[^<]*>")
@@ -229,8 +243,6 @@ def analyze_class(module_name: str, class_: tuple) -> Dict:
     for c in inspect.getmro(class_[1]):
         if c.__name__ == class_[1].__name__:
             continue
-        if c.__module__ == "builtins":
-            continue
 
         # Skip parent classes which are not directly inherited.
         fullname = "{}{}".format(c.__module__, c.__name__)
@@ -239,6 +251,11 @@ def analyze_class(module_name: str, class_: tuple) -> Dict:
 
         if c.__module__ == "bpy_types" and c.__name__ != "_GenericUI":
             class_def["base_classes"].append("bpy.types.{}".format(c.__name__))
+        elif c.__module__ == "builtins":
+            if c.__name__ in ("dict"):
+                class_def["base_classes"].append(c.__name__)
+            else:
+                continue
         else:
             class_def["base_classes"].append(
                 "{}.{}".format(c.__module__, c.__name__))

@@ -1,9 +1,10 @@
 import typing
 import collections.abc
 import typing_extensions
+import numpy.typing as npt
 
 
-def function_1(arg_1):
+def function_1(arg_1) -> None:
     """(Deprecated)"""
 
 

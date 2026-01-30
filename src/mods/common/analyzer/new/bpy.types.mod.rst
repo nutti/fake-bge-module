@@ -18,12 +18,12 @@
 
    .. method:: foreach_get(seq)
 
-      :type seq: collections.abc.MutableSequence[_GenericType1] | typing_extensions.Buffer
+      :type seq: collections.abc.MutableSequence[_GenericType1] | typing_extensions.Buffer | npt.NDArray
       :mod-option arg seq: skip-refine
 
    .. method:: foreach_set(seq)
 
-      :type seq: collections.abc.Sequence[_GenericType1] | typing_extensions.Buffer
+      :type seq: collections.abc.Sequence[_GenericType1] | typing_extensions.Buffer | npt.NDArray
       :mod-option arg seq: skip-refine
 
    .. method:: __getitem__(key)
@@ -38,7 +38,7 @@
 
       :type key: slice
       :mod-option arg key: skip-refine
-      :rtype: list[_GenericType1, ...]
+      :rtype: tuple[_GenericType1, ...]
       :mod-option rtype: skip-refine
       :option function: overload
 
@@ -77,3 +77,17 @@
 
       :rtype: int
       :mod-option rtype: skip-refine
+
+.. class:: ContextTempOverride
+
+   .. method:: __enter__()
+
+      :rtype: typing_extensions.Self
+      :mod-option rtype: skip-refine
+
+   .. method:: __exit__(exc_type, exc_val, exc_tb)
+
+      :type exc_type: type[BaseException] | None
+      :mod-option arg exc_type: skip-refine
+      :type exc_val: BaseException | None
+      :mod-option arg exc_val: skip-refine
