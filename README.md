@@ -30,7 +30,7 @@ You can install it as a pip package.
 
 #### Install a latest package
 
-If you install fake-bpy-module for Blender latest build (master branch daily
+If you install fake-bge-module for UPBGE latest build (master branch daily
 build powered by [nutti/upbge-daily-build](https://github.com/nutti/upbge-daily-build)),
 run below command.
 
@@ -69,6 +69,8 @@ being too big for intelliSense to work.*
 |0.2.5|[https://pypi.org/project/fake-bge-module-0.2.5/](https://pypi.org/project/fake-bge-module-0.2.5/)|
 |0.30|[https://pypi.org/project/fake-bge-module-0.30/](https://pypi.org/project/fake-bge-module-0.30/)|
 |0.36|[https://pypi.org/project/fake-bge-module-0.36/](https://pypi.org/project/fake-bge-module-0.36/)|
+|0.44|[https://pypi.org/project/fake-bge-module-0.44/](https://pypi.org/project/fake-bge-module-0.44/)|
+|0.50|[https://pypi.org/project/fake-bge-module-0.50/](https://pypi.org/project/fake-bge-module-0.50/)|
 |latest|[https://pypi.org/project/fake-bge-module/](https://pypi.org/project/fake-bge-module/)|
 ||[https://pypi.org/project/fake-bge-module-latest/](https://pypi.org/project/fake-bge-module-latest/)|
 
@@ -115,3 +117,7 @@ Support via [GitHub Sponsors](https://github.com/sponsors/nutti)
 
 * CONTACTS: [Twitter](https://twitter.com/nutti__)
 * WEBSITE: [Japanese Only](https://colorful-pico.net/)
+
+### Contributors
+
+* [**@kant**](https://github.com/kant)
