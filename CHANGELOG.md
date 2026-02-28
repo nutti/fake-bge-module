@@ -7,7 +7,7 @@
 <!-- markdownlint-disable-next-line MD013 -->
 ## [20260228](https://github.com/nutti/fake-bge-module/compare/20250202...20260228) - 2026.2.28
 
-### Notice
+### Updated Features
 
 * Support fake-bge-module-0.44
 * Support fake-bge-module-0.50
