@@ -2,7 +2,14 @@
 
 # Change Log
 
-## [Unreleased](https://github.com/nutti/fake-bge-module/compare/20260228...main)
+## [Unreleased](https://github.com/nutti/fake-bge-module/compare/20260731...main)
+
+<!-- markdownlint-disable-next-line MD013 -->
+## [20260731](https://github.com/nutti/fake-bge-module/compare/20260228...20260731) - 2026.7.31
+
+### Other Updates
+
+* Merge fake-bpy-module update ([20260730](https://github.com/nutti/fake-bpy-module/releases/tag/20260730))
 
 <!-- markdownlint-disable-next-line MD013 -->
 ## [20260228](https://github.com/nutti/fake-bge-module/compare/20250202...20260228) - 2026.2.28
