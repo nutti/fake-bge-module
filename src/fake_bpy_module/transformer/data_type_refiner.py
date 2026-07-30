@@ -58,9 +58,13 @@ REGEX_MATCH_DATA_TYPE_FLOAT_MULTI_DIMENSIONAL_ARRAY_OF = re.compile(r"^float mul
 REGEX_MATCH_DATA_TYPE_MATHUTILS_MATRIX_OF = re.compile(r"^`mathutils.Matrix` of ([0-9]) \* ([0-9]) items in \[([-einf+0-9,. ]+)\](, .+)*$")  # noqa: E501
 REGEX_MATCH_DATA_TYPE_STRING = re.compile(r"^(str|strings|string)\.*$")
 REGEX_MATCH_DATA_TYPE_INTEGER = re.compile(r"^(int|integer|)\.*$")
-REGEX_MATCH_DATA_TYPE_VALUE_BPY_PROP_COLLECTION_OF = re.compile(r"^`([a-zA-Z0-9]+)` `bpy_prop_collection` of `([a-zA-Z0-9]+)`$")  # noqa: E501
+REGEX_MATCH_DATA_TYPE_NUMPY_NDARRAY = re.compile(r"^`numpy.ndarray`$")
+REGEX_MATCH_DATA_TYPE_V_BPY_PROP_COLLECTION_OF = re.compile(r"^`([a-zA-Z0-9]+)` `bpy_prop_collection` of `([a-zA-Z0-9]+)`$")  # noqa: E501
+REGEX_MATCH_DATA_TYPE_V_BPY_PROP_COLLECTION_OF_SIMPLE = re.compile(r"^`([a-zA-Z0-9]+)`\[`([a-zA-Z0-9]+)`\]")  # noqa: E501
 REGEX_MATCH_DATA_TYPE_SEQUENCE_OF = re.compile(r"^sequence of\s+`([a-zA-Z0-9_.]+)`$")  # noqa: E501
 REGEX_MATCH_DATA_TYPE_BPY_PROP_COLLECTION_OF = re.compile(r"^`bpy_prop_collection` of `([a-zA-Z0-9]+)`")  # noqa: E501
+REGEX_MATCH_DATA_TYPE_BPY_PROP_COLLECTION_OF_SIMPLE = re.compile(r"^`bpy_prop_collection`\[`([a-zA-Z0-9]+)`\]")  # noqa: E501
+REGEX_MATCH_DATA_TYPE_BPY_PROP_ARRAY_OF_SIMPLE = re.compile(r"^`bpy_prop_array`\[([a-zA-Z0-9]+)\]")  # noqa: E501
 REGEX_MATCH_DATA_TYPE_LIST_OF_VALUE_OBJECTS = re.compile(r"^List of `([A-Za-z0-9]+)` objects$")  # noqa: E501
 REGEX_MATCH_DATA_TYPE_LIST_OF_VALUE = re.compile(r"^[Ll]ist of `([A-Za-z0-9_.]+)`$")  # noqa: E501
 REGEX_MATCH_DATA_TYPE_LIST_OF_NUMBER_OR_STRING = re.compile(r"^(list|sequence) of (float|int|str)")  # noqa: E501
@@ -414,6 +418,8 @@ class DataTypeRefiner(TransformerBase):
             return [make_data_type_node("str")]
         if REGEX_MATCH_DATA_TYPE_INTEGER.match(dtype_str):
             return [make_data_type_node("int")]
+        if REGEX_MATCH_DATA_TYPE_NUMPY_NDARRAY.match(dtype_str):
+            return [make_data_type_node("npt.NDArray")]
         if dtype_str == "tuple":
             return [make_data_type_node("tuple")]
         if dtype_str == "sequence":
@@ -425,7 +431,16 @@ class DataTypeRefiner(TransformerBase):
             if s1:
                 return [make_data_type_node(f"`{s1}`")]
 
-        if m := REGEX_MATCH_DATA_TYPE_VALUE_BPY_PROP_COLLECTION_OF.match(
+        if m := REGEX_MATCH_DATA_TYPE_V_BPY_PROP_COLLECTION_OF.match(
+                dtype_str):
+            s1 = self._parse_custom_data_type(
+                m.group(1), uniq_full_names, uniq_module_names, module_name)
+            s2 = self._parse_custom_data_type(
+                m.group(2), uniq_full_names, uniq_module_names, module_name)
+            if s1 and s2:
+                return [make_data_type_node(f"`{s1}`")]
+
+        if m := REGEX_MATCH_DATA_TYPE_V_BPY_PROP_COLLECTION_OF_SIMPLE.match(
                 dtype_str):
             s1 = self._parse_custom_data_type(
                 m.group(1), uniq_full_names, uniq_module_names, module_name)
@@ -456,6 +471,19 @@ class DataTypeRefiner(TransformerBase):
             if s:
                 return [make_data_type_node(
                     f"`bpy.types.bpy_prop_collection`[`{s}`]")]
+        # [Ex] `bpy_prop_collection`[`ThemeStripColor`]
+        if m := REGEX_MATCH_DATA_TYPE_BPY_PROP_COLLECTION_OF_SIMPLE.match(
+                dtype_str):
+            s = self._parse_custom_data_type(
+                m.group(1), uniq_full_names, uniq_module_names, module_name)
+            if s:
+                return [make_data_type_node(
+                    f"`bpy.types.bpy_prop_collection`[`{s}`]")]
+        # [Ex] `bpy_prop_array`[int]
+        if m := REGEX_MATCH_DATA_TYPE_BPY_PROP_ARRAY_OF_SIMPLE.match(
+                dtype_str):
+            return [make_data_type_node(
+                f"`bpy.types.bpy_prop_array`[{m.group(1)}]")]
         # [Ex] List of FEdge objects
         if m := REGEX_MATCH_DATA_TYPE_LIST_OF_VALUE_OBJECTS.match(dtype_str):
             s = self._parse_custom_data_type(
@@ -578,11 +606,10 @@ class DataTypeRefiner(TransformerBase):
 
         def may_have_rna_based_options(module_name: str) -> bool:
             if module_name.startswith("bpy."):
-                if module_name == "bpy.utils":
-                    return False
-                if module_name == "bpy.path":
-                    return False
-                return True
+                return module_name not in (
+                    "bpy.utils",
+                    "bpy.path",
+                )
 
             return False
 
@@ -596,29 +623,44 @@ class DataTypeRefiner(TransformerBase):
             elif variable_kind == 'CONST':
                 option_results.append("never none")
 
-            if m := _REGEX_DATA_TYPE_OPTION_STR.search(dtype_str):
-                option_str = m.group(1)
-                options = [sp.strip().lower() for sp in option_str.split(",")]
-                has_unknown_option = False
-                for opt in options:
-                    if opt not in ("optional", "readonly", "never none"):
-                        has_unknown_option = True
-                        output_log(LOG_LEVEL_WARN,
-                                   f"Unknown option '{opt}' is found from "
-                                   f"{dtype_str}")
+            def parse_options(string_to_parse: str) -> (list[str], str):
+                results = []
+                stripped = string_to_parse
 
-                # If there is unknown parameter options, we don't strip them
-                # from original string.
-                if not has_unknown_option:
-                    option_results.extend(options)
+                if m := _REGEX_DATA_TYPE_OPTION_STR.search(string_to_parse):
+                    option_str = m.group(1)
+                    options = [sp.strip().lower()
+                               for sp in option_str.split(",")]
+                    has_unknown_option = False
+                    for opt in options:
+                        if opt not in ("optional", "readonly", "never none"):
+                            has_unknown_option = True
+                            output_log(LOG_LEVEL_WARN,
+                                       f"Unknown option '{opt}' is found from "
+                                       f"{string_to_parse}")
 
-                    # Strip the unused string to speed up the later parsing
-                    # process.
-                    stripped = _REGEX_DATA_TYPE_OPTION_STR.sub("", dtype_str)
-                    output_log(LOG_LEVEL_DEBUG,
-                               f"Data type is stripped: "
-                               f"{dtype_str} -> {stripped}")
-                    dtype_str = stripped
+                    # If there is unknown parameter options, we don't strip them
+                    # from original string.
+                    if not has_unknown_option:
+                        results.extend(options)
+
+                        # Strip the unused string to speed up the later parsing
+                        # process.
+                        stripped = _REGEX_DATA_TYPE_OPTION_STR.sub(
+                            "", string_to_parse)
+                        output_log(LOG_LEVEL_DEBUG,
+                                   f"Data type is stripped: "
+                                   f"{string_to_parse} -> {stripped}")
+
+                return results, stripped
+
+            o, s = parse_options(dtype_str)
+            option_results.extend(o)
+            dtype_str = s
+            if description_str is not None:
+                # TODO: strip description_str as well as dtype_str
+                o, _ = parse_options(description_str)
+                option_results.extend(o)
 
             option_results = sorted(set(option_results))
 
@@ -634,7 +676,7 @@ class DataTypeRefiner(TransformerBase):
         is_never_none = True
         is_optional = False
 
-        if m := _REGEX_DATA_TYPE_OPTION_END_WITH_NONE.search(dtype_str):
+        if _REGEX_DATA_TYPE_OPTION_END_WITH_NONE.search(dtype_str):
             stripped = _REGEX_DATA_TYPE_OPTION_END_WITH_NONE.sub("", dtype_str)
             output_log(LOG_LEVEL_DEBUG,
                        f"Data type is stripped: {dtype_str} -> {stripped}")
@@ -642,7 +684,7 @@ class DataTypeRefiner(TransformerBase):
             is_never_none = False
 
         if description_str is not None:
-            if m := _REGEX_DATA_TYPE_OPTION_OPTIONAL.search(description_str):
+            if _REGEX_DATA_TYPE_OPTION_OPTIONAL.search(description_str):
                 # If default value is not None, data type does not need
                 # optional.
                 is_never_none = (
@@ -798,7 +840,7 @@ class DataTypeRefiner(TransformerBase):
         if m := _REGEX_DATA_TYPE_LITERALS_WITH_BACK_QUOTE_TYPE.match(dtype_str):
             enum_literal_type = get_rna_enum_name(dtype_str)
             dtype_node = DataTypeNode()
-            append_child(dtype_node, nodes.Text("Literal["))
+            append_child(dtype_node, nodes.Text("typing.Literal["))
             append_child(dtype_node,
                          EnumRef(text=f"bpy.stub_internal.rna_enums.{enum_literal_type}"))
             append_child(dtype_node, nodes.Text("]"))
@@ -963,6 +1005,12 @@ class DataTypeRefiner(TransformerBase):
                             is_pointer_prop = False
                             break
 
+                # This is for the bpy_prop_collection syntax introduced
+                # since Blender 5.1.
+                if REGEX_MATCH_DATA_TYPE_V_BPY_PROP_COLLECTION_OF_SIMPLE.match(
+                        dtype_node.astext()):
+                    is_pointer_prop = False
+
                 options = []
                 if "option" in dtype_node.attributes:
                     options = dtype_node.attributes["option"].split(",")
@@ -1019,8 +1067,10 @@ class DataTypeRefiner(TransformerBase):
             attr_nodes = find_children(attr_list_node, AttributeNode)
             for attr_node in attr_nodes:
                 attr_name = attr_node.element(NameNode).astext()
+                description = attr_node.element(DescriptionNode).astext()
                 dtype_list_node = attr_node.element(DataTypeListNode)
                 refine(dtype_list_node, module_name, 'CLS_ATTR',
+                       description_str=description,
                        additional_info={
                            "self_class": f"{module_name}.{class_name}",
                            "data_name": f"{attr_name}"
@@ -1058,8 +1108,10 @@ class DataTypeRefiner(TransformerBase):
         data_nodes = find_children(document, DataNode)
         for data_node in data_nodes:
             data_name = data_node.element(NameNode).astext()
+            description = data_node.element(DescriptionNode).astext()
             dtype_list_node = data_node.element(DataTypeListNode)
             refine(dtype_list_node, module_name, 'CONST',
+                   description_str=description,
                    additional_info={"data_name": f"{data_name}"})
 
     @classmethod

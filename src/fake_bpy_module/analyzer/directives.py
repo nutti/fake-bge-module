@@ -119,36 +119,33 @@ def parse_func_arg_default_value(expr: ast.expr) -> str | None:
         return expr.value
     if isinstance(expr, ast.Name):
         return expr.id
+
+    def get_items_str(expr: ast.List | ast.Tuple | ast.Set) -> str:
+        return ", ".join(
+            str(parse_func_arg_default_value(e)) for e in expr.elts
+        )
+
     if isinstance(expr, ast.List):
-        return (
-            f"""[{', '.join(str(parse_func_arg_default_value(e))
-            for e in expr.elts)}]"""
-            if len(expr.elts) > 0
-            else "[]"
-        )
+        if len(expr.elts) == 0:
+            return "[]"
+        return f"[{get_items_str(expr)}]"
     if isinstance(expr, ast.Tuple):
-        return (
-            f"""({', '.join(str(parse_func_arg_default_value(e))
-            for e in expr.elts)})"""
-            if len(expr.elts) > 0
-            else "()"
-        )
+        if len(expr.elts) == 0:
+            return "()"
+        return f"({get_items_str(expr)})"
     if isinstance(expr, ast.Set):
-        return (
-            f"""{{{', '.join(str(parse_func_arg_default_value(e))
-            for e in expr.elts)}}}"""
-            if len(expr.elts) > 0
-            else "set()"
-        )
+        if len(expr.elts) == 0:
+            return "set()"
+        return f"{{{get_items_str(expr)}}}"
     if isinstance(expr, ast.Dict):
-        return (
-            f"""{{{', '.join(
-            f'{parse_func_arg_default_value(k)}'
-            f':{parse_func_arg_default_value(v)}'
-            for k, v in zip(expr.keys, expr.values, strict=False))}}}"""
-            if len(expr.keys) > 0
-            else "{}"
+        if len(expr.keys) == 0:
+            return "{}"
+        items = ', '.join(
+            f'{parse_func_arg_default_value(k)}:{parse_func_arg_default_value(v)}'
+            for k, v in zip(expr.keys, expr.values, strict=False)
         )
+        return f"{{{items}}}"
+
     if isinstance(expr, ast.UnaryOp):
         if isinstance(expr.op, ast.USub):
             operand = parse_func_arg_default_value(expr.operand)
@@ -694,6 +691,27 @@ class BaseClassDirective(rst.Directive):
         return [base_class_list_node]
 
 
+class DetailsDirective(rst.Directive):
+    required_arguments = 0
+    optional_arguments = 1
+    final_argument_whitespace = True
+    has_content = True
+
+    def run(self) -> list[FunctionNode]:
+        # `.. details::` used in Blender docs to denote a section
+        # with dunder methods.
+        # See "Special Methods" in
+        # https://docs.blender.org/api/5.2/bmesh.types.html#bmesh.types.BMDeformVert
+        # Skipped for now: it's currently undecided how to correctly merge
+        # conflicts between fake-bpy mod.rst overrides and upstream dunder
+        # methods, since the two use different approaches:
+        #   fake-bpy: `bpy_prop_collection.__getitem__`->`_GenericType1`
+        #   upstream: `bpy_prop_collection.__getitem__`->`bpy_struct`, then
+        #             reimplements e.g. `BlendDataObjects.__getitem__`->`Object`
+        #             in stubs (not present in docs)
+        return []
+
+
 def register_directives() -> None:
     rst.directives.register_directive("module", ModuleDirective)
     rst.directives.register_directive("currentmodule", ModuleDirective)
@@ -718,5 +736,6 @@ def register_directives() -> None:
     rst.directives.register_directive("deprecated", DocumentDirective)
 
     rst.directives.register_directive("include", NopDirective)
+    rst.directives.register_directive("details", DetailsDirective)
 
     rst.directives.register_directive("mod-type", ModTypeDirective)

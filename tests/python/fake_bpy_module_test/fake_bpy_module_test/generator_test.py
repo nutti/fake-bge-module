@@ -1,8 +1,9 @@
 import shutil
 from pathlib import Path
 
-from docutils import nodes  # noqa: TCH002
+from docutils import nodes  # noqa: TC002
 from docutils.core import publish_doctree
+
 from fake_bpy_module import config  # pylint: disable=E0401
 from fake_bpy_module.analyzer.analyzer import (
     BaseAnalyzer,  # pylint: disable=E0401
@@ -251,9 +252,18 @@ class SortedEntryPointNodesTest(common.FakeBpyModuleTestBase):
             self.compare_with_file_contents(sorted_document.pformat(), expect)
 
     def test_high_priority_class(self) -> None:
-        rst_files = ["high_priority_class.rst"]
-        expect_analyzed_files = ["high_priority_class.xml"]
-        expect_sorted_files = ["high_priority_class_sorted.xml"]
+        rst_files = [
+            "high_priority_class.rst",
+            "high_priority_class_with_base_class.rst"
+        ]
+        expect_analyzed_files = [
+            "high_priority_class.xml",
+            "high_priority_class_with_base_class.xml"
+        ]
+        expect_sorted_files = [
+            "high_priority_class_sorted.xml",
+            "high_priority_class_with_base_class_sorted.xml"
+        ]
         rst_files = [f"{self.data_dir}/input/high_priority_class/{f}"
                      for f in rst_files]
         expect_analyzed_files = [

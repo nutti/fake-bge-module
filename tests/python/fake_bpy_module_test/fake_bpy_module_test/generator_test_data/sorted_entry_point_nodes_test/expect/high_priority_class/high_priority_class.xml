@@ -28,6 +28,13 @@
         <function-list>
     <class>
         <name>
+            bpy_prop_collection_idprop
+        <description>
+        <base-class-list>
+        <attribute-list>
+        <function-list>
+    <class>
+        <name>
             bpy_prop_array
         <description>
         <base-class-list>
@@ -36,6 +43,13 @@
     <class>
         <name>
             bpy_struct
+        <description>
+        <base-class-list>
+        <attribute-list>
+        <function-list>
+    <class>
+        <name>
+            bpy_prop
         <description>
         <base-class-list>
         <attribute-list>

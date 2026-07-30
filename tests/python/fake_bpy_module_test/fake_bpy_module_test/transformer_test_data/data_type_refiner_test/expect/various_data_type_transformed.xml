@@ -203,7 +203,7 @@
         <description>
         <data-type-list>
             <data-type option="never none">
-                Literal[
+                typing.Literal[
                 <enum-ref>
                     bpy.stub_internal.rna_enums.Example
                 ]
@@ -453,6 +453,14 @@
                     refined_module_a.RefinedClassA
     <data>
         <name>
+            data_value_bpy_prop_collection_of_simple_syntax
+        <description>
+        <data-type-list>
+            <data-type option="never none">
+                <class-ref>
+                    refined_module_a.RefinedClassA
+    <data>
+        <name>
             data_set_of_strings
         <description>
         <data-type-list>
@@ -489,6 +497,27 @@
                 <class-ref>
                     refined_module_a.RefinedClassA
                 ]
+    <data>
+        <name>
+            data_bpy_prop_collection_of_simple_syntax
+        <description>
+        <data-type-list>
+            <data-type option="never none">
+                <class-ref>
+                    bpy.types.bpy_prop_collection
+                [
+                <class-ref>
+                    refined_module_a.RefinedClassA
+                ]
+    <data>
+        <name>
+            data_bpy_prop_array_of_simple_syntax
+        <description>
+        <data-type-list>
+            <data-type option="never none">
+                <class-ref>
+                    bpy.types.bpy_prop_array
+                [int]
     <data>
         <name>
             data_list_of_value_objects
@@ -700,3 +729,10 @@
         <data-type-list>
             <data-type option="never none">
                 dict
+    <data>
+        <name>
+            data_numpy_ndarray
+        <description>
+        <data-type-list>
+            <data-type option="never none">
+                npt.NDArray

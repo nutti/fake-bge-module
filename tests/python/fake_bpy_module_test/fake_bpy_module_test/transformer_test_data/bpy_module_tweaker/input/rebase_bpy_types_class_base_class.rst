@@ -24,3 +24,20 @@
 
       :type: :class:`Attributes2` :class:`bpy_prop_collection` of :class:`Attribute2`
 
+   .. attribute:: attr_3
+
+      attr_3 description
+
+      :type: :class:`ClassB`\ [:class:`ClassC`]
+
+.. class:: ClassB
+
+.. class:: ClassC
+
+.. class:: ClassD
+
+   .. base-class:: `bpy_prop_collection`
+
+.. class:: bpy_prop_collection_idprop
+
+   .. base-class:: `bpy_prop_collection`

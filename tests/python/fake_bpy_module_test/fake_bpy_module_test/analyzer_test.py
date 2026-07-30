@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import docutils
+
 from fake_bpy_module import config  # pylint: disable=E0401
 from fake_bpy_module.analyzer.analyzer import (
     BaseAnalyzer,  # pylint: disable=E0401
@@ -340,6 +341,19 @@ class BaseAnalyzerTest(common.FakeBpyModuleTestBase):
     def test_generic_types(self) -> None:
         rst_files = ["generic_types.rst"]
         expect_files = ["generic_types.xml"]
+        rst_files = [f"{self.data_dir}/input/{f}" for f in rst_files]
+        expect_files = [f"{self.data_dir}/expect/{f}" for f in expect_files]
+
+        analyzer = BaseAnalyzer()
+        documents = analyzer.analyze(rst_files)
+
+        self.assertEqual(len(documents), len(rst_files))
+        for doc, expect in zip(documents, expect_files, strict=True):
+            self.compare_with_file_contents(doc.pformat(), expect)
+
+    def test_details_directive(self) -> None:
+        rst_files = ["details_directive.rst"]
+        expect_files = ["details_directive.xml"]
         rst_files = [f"{self.data_dir}/input/{f}" for f in rst_files]
         expect_files = [f"{self.data_dir}/expect/{f}" for f in expect_files]
 

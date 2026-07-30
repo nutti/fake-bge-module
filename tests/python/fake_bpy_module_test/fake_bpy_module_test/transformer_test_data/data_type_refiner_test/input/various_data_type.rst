@@ -223,6 +223,10 @@
 
    :type: :class:`RefinedClassA` :class:`bpy_prop_collection` of :class:`ClassA`, 
 
+.. data:: data_value_bpy_prop_collection_of_simple_syntax
+
+   :type: :class:`RefinedClassA`\ [:class:`ClassA`]
+
 .. data:: data_set_of_strings
 
    :type: set of strings
@@ -238,6 +242,14 @@
 .. data:: data_bpy_prop_collection_of
 
    :type: :class:`bpy_prop_collection` of :class:`RefinedClassA`,
+
+.. data:: data_bpy_prop_collection_of_simple_syntax
+
+   :type: :class:`bpy_prop_collection`\ [:class:`RefinedClassA`],
+
+.. data:: data_bpy_prop_array_of_simple_syntax
+
+   :type: :class:`bpy_prop_array`\ [int],
 
 .. data:: data_list_of_value_objects
 
@@ -330,3 +342,7 @@
 .. data:: data_dict
 
    :type: dict
+
+.. data:: data_numpy_ndarray
+
+   :type: :class:`numpy.ndarray`

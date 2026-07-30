@@ -79,11 +79,12 @@ fi
 python_bin=$(command -v "${PYTHON_BIN}")
 
 # check if python version meets our requirements
-IFS=" " read -r -a python_version <<< "$(${python_bin} -c 'import sys; print(sys.version_info[:])' | tr -d '(),')"
-if [ "${python_version[0]}" -lt 3 ] || [[ "${python_version[0]}" -eq 3 && "${python_version[1]}" -lt 11 ]]; then
-    echo "Error: Unsupported Python version \"${python_version[0]}.${python_version[1]}\". Requiring Python 3.11 or higher."
-    exit 1
-fi
+"$python_bin" -c "
+import sys
+if sys.version_info < (3, 11):
+    print(f'Error: Python 3.11+ required, got {sys.version_info[:3]}')
+    sys.exit(1)
+"
 
 function get_remote_git_ref() {
     local ref=$1
@@ -237,6 +238,16 @@ popd > /dev/null
 # install fake-module
 echo
 pip install "${fake_module_wheel}"
+
+
+# Remove -stub from directory name to supress error.
+site_packages=$(python3 -c "import site; print(site.getsitepackages()[0])")
+find "${site_packages}" -type d -name "*-stubs" | while IFS= read -r dir; do
+    if [[ "${dir}" == *-stubs ]]; then
+        new_dir="${dir%-stubs}/"
+        mv "${dir}" "${new_dir}"
+    fi
+done
 
 # Re-enter source
 pushd "${source_dir}" > /dev/null

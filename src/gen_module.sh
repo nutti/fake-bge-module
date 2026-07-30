@@ -62,11 +62,12 @@ fi
 python_bin=$(command -v "${PYTHON_BIN}")
 
 echo "Checking if Python version meets the requirements ..."
-IFS=" " read -r -a python_version <<< "$(${python_bin} -c 'import sys; print(sys.version_info[:])' | tr -d '(),')"
-if [ "${python_version[0]}" -lt 3 ] || [[ "${python_version[0]}" -eq 3 && "${python_version[1]}" -lt 11 ]]; then
-    echo "Error: Unsupported python version \"${python_version[0]}.${python_version[1]}\". Requiring python 3.11 or higher."
-    exit 1
-fi
+"$python_bin" -c "
+import sys
+if sys.version_info < (3, 11):
+    print(f'Error: Python 3.11+ required, got {sys.version_info[:3]}')
+    sys.exit(1)
+"
 
 function get_remote_git_ref() {
     local ref=$1
@@ -238,6 +239,11 @@ fi
 if [[ "${generated_mod_dir}/gen_startup_modfile" -ot "${SCRIPT_DIR}/gen_modfile/gen_external_modules_modfile.py" ]]; then
     ${blender_bin} --background --factory-startup -noaudio --python-exit-code 1 --python "${SCRIPT_DIR}/gen_modfile/gen_external_modules_modfile.py" -- -m keyingsets_builtins -a -o "${generated_mod_dir}/gen_startup_modfile" -f rst
     touch "${generated_mod_dir}/gen_startup_modfile"
+fi
+
+if [[ "${generated_mod_dir}/gen_node_inputs_outputs_for_node_class" -ot "${SCRIPT_DIR}/gen_modfile/gen_node_inputs_outputs_for_node_class.py" ]]; then
+    ${blender_bin} --background --factory-startup -noaudio --python-exit-code 1 --python "${SCRIPT_DIR}/gen_modfile/gen_node_inputs_outputs_for_node_class.py" -- -o "${generated_mod_dir}/gen_node_inputs_outputs_for_node_class" -f rst
+    touch "${generated_mod_dir}/gen_node_inputs_outputs_for_node_class"
 fi
 
 # generate bgl modfile if gen_bgl_modfile.py and source is newer

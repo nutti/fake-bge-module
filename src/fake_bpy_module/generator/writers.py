@@ -62,7 +62,7 @@ def sorted_entry_point_nodes(document: nodes.document) -> list[NodeBase]:
     for class_node in class_nodes:
         class_name = class_node.element(NameNode).astext()
         if class_name in ("bpy_prop_collection", "bpy_prop_collection_idprop",
-                          "bpy_prop_array", "bpy_struct"):
+                          "bpy_prop_array", "bpy_struct", "bpy_prop"):
             all_high_priority_class_nodes.append(class_node)
         else:
             all_class_nodes.append(class_node)
@@ -79,26 +79,41 @@ def sorted_entry_point_nodes(document: nodes.document) -> list[NodeBase]:
         class_name = class_node.element(NameNode).astext()
         class_name_to_node[class_name] = class_node
 
-    graph = {}
-    for class_node in all_class_nodes:
-        src_name = class_node.element(NameNode).astext()
-        base_class_list_node = class_node.element(BaseClassListNode)
-        base_class_nodes = find_children(base_class_list_node, BaseClassNode)
+    def create_class_node_deps_graph(class_nodes: list[ClassNode]) -> dict:
+        deps_graph = {}
+        for class_node in class_nodes:
+            src_name = class_node.element(NameNode).astext()
+            base_class_list_node = class_node.element(BaseClassListNode)
+            base_class_nodes = find_children(
+                base_class_list_node, BaseClassNode)
 
-        dst_names = []
-        for base_class_node in base_class_nodes:
-            dtype_list_node = base_class_node.element(DataTypeListNode)
-            dtype_nodes = find_children(dtype_list_node, DataTypeNode)
-            dtypes = [dt.astext().replace("`", "") for dt in dtype_nodes]
+            dst_names = []
+            for base_class_node in base_class_nodes:
+                dtype_list_node = base_class_node.element(DataTypeListNode)
+                dtype_nodes = find_children(dtype_list_node, DataTypeNode)
+                dtypes = [dt.astext().replace("`", "") for dt in dtype_nodes]
 
-            dst_names = [dtype for dtype in dtypes
-                         if dtype in class_name_to_node]
-        graph[src_name] = dst_names
+                dst_names = [dtype for dtype in dtypes
+                             if dtype in class_name_to_node]
+            deps_graph[src_name] = dst_names
+        return deps_graph
 
+    graph = create_class_node_deps_graph(all_class_nodes)
     sorter = graphlib.TopologicalSorter(graph)
     sorted_class_names = list(sorter.static_order())
     sorted_class_nodes = [class_name_to_node[name]
                           for name in sorted_class_names]
+
+    # Move all high priority class nodes to the head.
+    graph = create_class_node_deps_graph(all_high_priority_class_nodes)
+    sorter = graphlib.TopologicalSorter(graph)
+    sorted_class_names = list(sorter.static_order())
+    sorted_all_high_priority_class_nodes = [
+        class_name_to_node[name] for name in sorted_class_names]
+    for node in sorted_all_high_priority_class_nodes:
+        sorted_class_nodes.remove(node)
+    sorted_class_nodes = sorted_all_high_priority_class_nodes + \
+        sorted_class_nodes
 
     # Sort function data
     sorted_function_nodes = sorted(
@@ -191,11 +206,13 @@ class PyCodeWriterBase(BaseWriter):
                     wt.addln("@typing.overload")
 
             func_type = func_node.attributes["function_type"]
+            func_name = name_node.astext()
             if func_type in ("function", "method"):
+                first_arg = "cls" if func_name == "__new__" else "self"
                 if not arg_list_node.empty():
-                    wt.add(f"def {name_node.astext()}{gen_types}(self, ")
+                    wt.add(f"def {func_name}{gen_types}({first_arg}, ")
                 else:
-                    wt.add(f"def {name_node.astext()}{gen_types}(self")
+                    wt.add(f"def {func_name}{gen_types}({first_arg}")
             elif func_type == "classmethod":
                 if not arg_list_node.empty():
                     wt.addln("@classmethod")
@@ -475,32 +492,56 @@ class PyCodeWriterBase(BaseWriter):
                         0, nodes.Text(attr_node.attributes["deprecated"]))
 
                 dtype_str = None
+                is_readonly = False
                 if not dtype_list_node.empty():
                     dtype_nodes = find_children(dtype_list_node, DataTypeNode)
                     dtype_str = make_union(dtype_nodes)
                     for dtype_node in dtype_nodes:
+                        if "option" in dtype_node.attributes:
+                            options = dtype_node.attributes["option"]
+                            if "readonly" in options:
+                                is_readonly = True
+
                         if self._is_accept_none(dtype_node, 'CLS_ATTR'):
                             dtype_str = f"{dtype_str} | None"
                             break
 
-                if dtype_str is not None:
+                if dtype_str is None:
+                    dtype_str = "typing.Any"
+
+                if is_readonly:
+                    wt.addln("@property")
+                    wt.addln(f"def {name_node.astext()}(self) -> {dtype_str}:")
+
+                    with CodeWriterIndent(1, True):
+                        if not desc_node.empty():
+                            wt.add("''' ")
+                            if not desc_node.empty():
+                                desc_text = desc_node.astext()
+                                wt.add(f"{desc_text}")
+                                # Add a space to avoid syntax error
+                                # with 4 single quotes in a row.
+                                if desc_text.endswith("'"):
+                                    wt.add(' ')
+                            wt.addln("'''")
+                        else:
+                            wt.addln(self.ellipsis_strings["method"])
+                        wt.new_line(1)
+                else:
                     wt.addln(f"{name_node.astext()}: {dtype_str}"
                              f"{self.ellipsis_strings['attribute']}")
-                else:
-                    wt.addln(f"{name_node.astext()}: typing.Any"
-                             f"{self.ellipsis_strings['attribute']}")
 
-                if not desc_node.empty():
-                    wt.add("''' ")
                     if not desc_node.empty():
-                        desc_text = desc_node.astext()
-                        wt.add(f"{desc_text}")
-                        # Add a space to avoid syntax error
-                        # with 4 single quotes in a row.
-                        if desc_text.endswith("'"):
-                            wt.add(' ')
-                    wt.addln("'''")
-                    wt.new_line(1)
+                        wt.add("''' ")
+                        if not desc_node.empty():
+                            desc_text = desc_node.astext()
+                            wt.add(f"{desc_text}")
+                            # Add a space to avoid syntax error
+                            # with 4 single quotes in a row.
+                            if desc_text.endswith("'"):
+                                wt.add(' ')
+                        wt.addln("'''")
+                        wt.new_line(1)
             if len(attr_nodes) > 0:
                 wt.new_line(1)
 

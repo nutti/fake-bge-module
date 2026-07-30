@@ -474,6 +474,18 @@
                 ,
     <data>
         <name>
+            data_value_bpy_prop_collection_of_simple_syntax
+        <description>
+        <data-type-list>
+            <data-type>
+                <class-ref>
+                    RefinedClassA
+                [
+                <class-ref>
+                    ClassA
+                ]
+    <data>
+        <name>
             data_set_of_strings
         <description>
         <data-type-list>
@@ -507,6 +519,27 @@
                 <class-ref>
                     RefinedClassA
                 ,
+    <data>
+        <name>
+            data_bpy_prop_collection_of_simple_syntax
+        <description>
+        <data-type-list>
+            <data-type>
+                <class-ref>
+                    bpy_prop_collection
+                [
+                <class-ref>
+                    RefinedClassA
+                ],
+    <data>
+        <name>
+            data_bpy_prop_array_of_simple_syntax
+        <description>
+        <data-type-list>
+            <data-type>
+                <class-ref>
+                    bpy_prop_array
+                [int],
     <data>
         <name>
             data_list_of_value_objects
@@ -711,3 +744,11 @@
         <data-type-list>
             <data-type>
                 dict
+    <data>
+        <name>
+            data_numpy_ndarray
+        <description>
+        <data-type-list>
+            <data-type>
+                <class-ref>
+                    numpy.ndarray
